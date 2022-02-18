@@ -3,15 +3,21 @@ import os
 from io import StringIO
 from datetime import datetime
 import json
-from random import random
 
 
+# def get_next_number(in_str):
+#     for i in range(len(in_str)):
+#
 
-# examine mystdout.getvalue()
-print()
-print()
-# print("mystdout:", mystdout.getvalue())
-print()
+
+def get_time_string():
+    time_string = datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
+
+
+def this_dir():
+    real_path = os.path.realpath(__file__)
+    dir_path = os.path.dirname(real_path)
+    return dir_path
 
 
 def print_callable(f):
@@ -25,10 +31,10 @@ def print_callable(f):
 def cache_print(f, *args, **kwargs):
     """
     Save the return value of f & prints from this function in a tuple:: (return values, prints)
-    :param f:
-    :param args:
-    :param kwargs:
-    :return:
+    :param f: fucntion
+    :param args: args
+    :param kwargs: kwargs
+    :return: (f(args, kwargs), stdout of the function as a string)
     """
     old_stdout = sys.stdout
     sys.stdout = mystdout = StringIO()
@@ -37,26 +43,6 @@ def cache_print(f, *args, **kwargs):
 
     sys.stdout = old_stdout
     return ret, mystdout.getvalue()
-
-
-# class Data:
-#     def __init__(self):
-
-
-class Property:
-    def __init__(self, name, unit=None):
-        self.name = name
-        self.log = 'log.txt'
-        self.imgs = 'imgs/'
-        self.figs = 'figs/'
-        self.data = 'data/'
-
-
-class TopFolder:
-    def __init__(self, id: int, properties: list[str]):
-        self.name = "exp-{}".format(id)
-        # for prop in properties:
-        #     self.__dict__[prop] =
 
 
 DirectoryStructure = {
@@ -73,11 +59,12 @@ PropertyStructure = {
     "name": "{}",
     "structure": {
         "log": "log.txt",
-        "imgs": "imgs/",
-        "figs": "figs/",
+        "imgs": "imgs",
+        "figs": "figs",
+        "setup": "setup.json",
         "data": {
             "name":
-                "data/",
+                "data",
             "structure":
                 {
                     "meas":
@@ -108,16 +95,18 @@ def create_directory_tree_for_session(parent_dir: str):
     existing_directories = os.listdir()
     # get the lowest unused number that isn't lower than any other number in this dir
     lowest_num = max(map(get_free_num, existing_directories))
-    print(lowest_num)
+
     new_exp_path = os.path.join(parent_dir, DirectoryStructure["name"].format(lowest_num))
     new_log_path = os.path.join(new_exp_path, DirectoryStructure["structure"]["log"])
     new_setup_json_path = os.path.join(new_exp_path, "setup.json")
 
     # create dirs & files
     os.mkdir(new_exp_path)
-    with open(new_log_path, "w") as f:
+    with open(new_log_path, "w") as fp:
         pass
-    with open(new_setup_json_path, "w") as f:
+    with open(new_setup_json_path, "w+") as fp:
+        fp.write("{}")
+        # print("written {} into", new_setup_json_path)
         pass
     ret = dict()
     ret["exp"] = new_exp_path
@@ -135,10 +124,15 @@ def create_property_entry(parent_dir, meas_dict):
     data_dir = j(new_prop_dir, prop_struct["data"]["name"])
     log_file = j(new_prop_dir, prop_struct["log"])
     meas_file = j(data_dir, prop_struct["data"]["structure"]["meas"]["name"])
+    setup_file = j(new_prop_dir, prop_struct["setup"])
     new_dirs = [new_prop_dir, imgs_dir, figs_dir, data_dir]
-    new_files = [log_file, meas_file]
+    new_files = [log_file, meas_file, setup_file]
     for d in new_dirs:
-        os.mkdir(d)
+        new_dir_name = d
+        # if os.path.isdir(d):
+
+            # new_dir_name = d +
+        os.mkdir(new_dir_name)
     for f in new_files:
         with open(f, "w") as f:
             pass
@@ -149,6 +143,7 @@ def create_property_entry(parent_dir, meas_dict):
     ret["imgs"] = imgs_dir
     ret["figs"] = figs_dir
     ret["data"] = data_dir
+    ret["setup"] = setup_file
     ret["log"] = log_file
     ret["meas"] = meas_file
     return ret
@@ -177,17 +172,18 @@ class MeasObject:
 def butler(keywords, delimiter="\n", add_new_line=True,
            keep_prints=True,
            new_session=False, session_parent_dir=os.getcwd(),
-           meas_object_var_name="_meas", measured_object_type=MeasObject):
+           meas_object_var_name="_meas", measured_object_type=MeasObject,
+           meas_setup="_setup"):
     assert type(meas_object_var_name) == str, "measured object variable name must be string! & Only one per function"
     assert type(keywords) == str or type(keywords) == list, "keywords must be of type str or list[str]"
 
-    if new_session or not butler.session_exists:
-        butler.session_paths = create_directory_tree_for_session(parent_dir=session_parent_dir)
-    else:
-        pass
-
     def decorated(f):
         def wrapper(*args, **kwargs):
+            if new_session or not butler.session_exists:
+                butler.session_paths = create_directory_tree_for_session(parent_dir=session_parent_dir)
+            else:
+                pass
+
             # variables exist after this function:
             res, mystdout = cache_print(f, *args, **kwargs)
 
@@ -195,14 +191,23 @@ def butler(keywords, delimiter="\n", add_new_line=True,
             with open(butler.session_paths["log"], "w") as fp:
                 # print(type(mystdout), mystdout)
                 fp.write(mystdout)
+            setup_dict = eval(meas_setup)
+            if not type(setup_dict) == dict:
+                setup_dict = setup_dict.__dict__
 
             """single property logs, etc."""
             """meas_prop, meas_type, params, values, meas_ID"""
+            # print(eval(meas_object_var_name))
             new_measurement = eval(meas_object_var_name).__dict__
             measured_property = new_measurement["meas_prop"]
+
             property_paths = create_property_entry(butler.session_paths["exp"], new_measurement)
             # into property_paths["log"] should go the prints caught by `keywords`
             property_log = property_paths["log"]
+
+            add_quantity_setup(property_paths["setup"], setup_dict)
+            add_exp_setup(measured_property, setup_dict)
+            _add_internal_setup(measured_property, setup_dict)
 
             if keep_prints:
                 print(mystdout)
@@ -210,7 +215,6 @@ def butler(keywords, delimiter="\n", add_new_line=True,
             if type(keywords) == str:
                 tmp_keywords = [keywords, ]
             print_split = mystdout.split(delimiter)
-            time_string = datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
             butlered_lines = ""
             for kwd in tmp_keywords:
                 for prnt in print_split:
@@ -219,38 +223,72 @@ def butler(keywords, delimiter="\n", add_new_line=True,
             # butlered_lines goes to exp_{}/meas_prop/log.txt
             with open(property_log, "w") as fp:
                 fp.write(butlered_lines)
-            # with open("session_%s.txt" % time_string, "a") as fp:
-            #     # print("SESSION RECORDING")
-            #     fp.write(butlered_lines)
             return res
         return wrapper
     return decorated
 
 
 butler.session_exists = False
-butler.session_paths = ""
+butler.session_paths = dict()
+butler.property_setup = dict()
 
 
-@butler("[INFO]", delimiter="\n", keep_prints=False, meas_object_var_name="andrej_meas")
+def add_quantity_setup(path_to_setup, setup_dict):
+    with open(path_to_setup, "w") as fp:
+        json.dump(setup_dict, fp)
+
+
+def add_exp_setup(quantity, setup_dict):
+    setup_path = butler.session_paths["setup"]
+    with open(setup_path, "r") as fp:
+        current_exp_setup = json.load(fp)
+    with open(setup_path, "w") as fp:
+        current_exp_setup[quantity] = setup_dict
+        json.dump(current_exp_setup, fp)
+
+
+def _add_internal_setup(quantity, setup_dict):
+    butler.property_setup[quantity] = setup_dict
+    setups_path = os.path.join(this_dir(), "setups")
+    if not os.path.isdir(setups_path):
+        butler.setups_folder = setups_path
+        os.mkdir(setups_path)
+    setups_path = os.path.join(setups_path, "setups.json")
+    if not os.path.isfile(setups_path):
+        with open(setups_path, "w") as fp:
+            fp.write("{}")
+    with open(setups_path, "r") as fp:
+        current_exp_setup = json.load(fp)
+    with open(setups_path, "w") as fp:
+        get_time_string()
+        current_exp_setup[quantity] = setup_dict
+        json.dump(current_exp_setup, fp)
+
+
+@butler("[INFO]", delimiter="\n", keep_prints=False, meas_object_var_name="andrej_meas", meas_setup="andrej_setup")
 def multiply(a, b):
+    global andrej_setup
+    andrej_setup = {"gripper": "2F85", "manipulator": "kinova lite 2"}
+    global andrej_meas
+    andrej_meas = MeasObject("andrejprop", "andrej", "andrej2", "andrej3", 6549547974)
     print("this should only be in the top log")
     print("[INFO] YAYAYAYYAYAYAYAYAYYAYAYAYAYYAYAYAYAYYAYAYYAYAYYAYAYYAYAYAYYAY")
     print("this should only be in the top log")
     print("[INFO] YAYAYAYYAYAYAYAYAYYAYAYAYAYYAYAYAYAYYAYAYYAYAYYAYAYYAYAYAYYAY")
     print("this should only be in the top log")
     print("[INFO] YAYAYAYYAYAYAYAYAYYAYAYAYAYYAYAYAYAYYAYAYYAYAYYAYAYYAYAYAYYAY")
+    print("result: ", a*b)
     return a*b
 
 
 if __name__ == "__main__":
-    print("dude1")
+    # print("dude1")
     all_vars = dir()
-    andrej_meas = MeasObject("andrejprop", "andrej", "andrej2", "andrej3", 6549547974)
     c = multiply(37, 20)
-    print(all_vars)
-    print(eval('andrej_meas').__dict__)
+    c = multiply(39, 20)
+    # print(all_vars)
+    # print(eval('andrej_meas').__dict__)
     print(eval("__file__"))
-    # create_directory_tree_for_session(os.getcwd())
 
 
 
