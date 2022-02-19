@@ -12,6 +12,7 @@ import json
 
 def get_time_string():
     time_string = datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
+    return time_string
 
 
 def this_dir():
@@ -31,14 +32,13 @@ def print_callable(f):
 def cache_print(f, *args, **kwargs):
     """
     Save the return value of f & prints from this function in a tuple:: (return values, prints)
-    :param f: fucntion
+    :param f: function
     :param args: args
     :param kwargs: kwargs
     :return: (f(args, kwargs), stdout of the function as a string)
     """
     old_stdout = sys.stdout
     sys.stdout = mystdout = StringIO()
-
     ret = f(*args, **kwargs)
 
     sys.stdout = old_stdout
@@ -52,6 +52,7 @@ DirectoryStructure = {
         {
             "log": "log.txt",
             "setup": "setup.json",
+            "timestamp": "time_stamp{}"
         }
 }
 
@@ -99,6 +100,7 @@ def create_directory_tree_for_session(parent_dir: str):
     new_exp_path = os.path.join(parent_dir, DirectoryStructure["name"].format(lowest_num))
     new_log_path = os.path.join(new_exp_path, DirectoryStructure["structure"]["log"])
     new_setup_json_path = os.path.join(new_exp_path, "setup.json")
+    new_time_stamp_path = os.path.join(new_exp_path, "timestamp_"+get_time_string())
 
     # create dirs & files
     os.mkdir(new_exp_path)
@@ -107,6 +109,8 @@ def create_directory_tree_for_session(parent_dir: str):
     with open(new_setup_json_path, "w+") as fp:
         fp.write("{}")
         # print("written {} into", new_setup_json_path)
+        pass
+    with open(new_time_stamp_path, "w") as fp:
         pass
     ret = dict()
     ret["exp"] = new_exp_path
@@ -191,14 +195,14 @@ def butler(keywords, delimiter="\n", add_new_line=True,
             with open(butler.session_paths["log"], "w") as fp:
                 # print(type(mystdout), mystdout)
                 fp.write(mystdout)
-            setup_dict = eval(meas_setup)
+            setup_dict = eval("butler."+meas_setup)
             if not type(setup_dict) == dict:
                 setup_dict = setup_dict.__dict__
 
             """single property logs, etc."""
             """meas_prop, meas_type, params, values, meas_ID"""
             # print(eval(meas_object_var_name))
-            new_measurement = eval(meas_object_var_name).__dict__
+            new_measurement = eval("butler."+meas_object_var_name).__dict__
             measured_property = new_measurement["meas_prop"]
 
             property_paths = create_property_entry(butler.session_paths["exp"], new_measurement)
@@ -207,7 +211,7 @@ def butler(keywords, delimiter="\n", add_new_line=True,
 
             add_quantity_setup(property_paths["setup"], setup_dict)
             add_exp_setup(measured_property, setup_dict)
-            _add_internal_setup(measured_property, setup_dict)
+            _update_internal_setup(measured_property, setup_dict)
 
             if keep_prints:
                 print(mystdout)
@@ -247,7 +251,7 @@ def add_exp_setup(quantity, setup_dict):
         json.dump(current_exp_setup, fp)
 
 
-def _add_internal_setup(quantity, setup_dict):
+def _update_internal_setup(quantity, setup_dict):  # atm only the last used setup for the given quantity
     butler.property_setup[quantity] = setup_dict
     setups_path = os.path.join(this_dir(), "setups")
     if not os.path.isdir(setups_path):
@@ -267,16 +271,11 @@ def _add_internal_setup(quantity, setup_dict):
 
 @butler("[INFO]", delimiter="\n", keep_prints=False, meas_object_var_name="andrej_meas", meas_setup="andrej_setup")
 def multiply(a, b):
-    global andrej_setup
-    andrej_setup = {"gripper": "2F85", "manipulator": "kinova lite 2"}
-    global andrej_meas
-    andrej_meas = MeasObject("andrejprop", "andrej", "andrej2", "andrej3", 6549547974)
+    # print(andrej_meas)
+    butler.andrej_setup = {"gripper": "2F85", "manipulator": "kinova lite 2"}
+    butler.andrej_meas = MeasObject("andrejprop", "andrej", "andrej2", "andrej3", 6549547974)
     print("this should only be in the top log")
-    print("[INFO] YAYAYAYYAYAYAYAYAYYAYAYAYAYYAYAYAYAYYAYAYYAYAYYAYAYYAYAYAYYAY")
-    print("this should only be in the top log")
-    print("[INFO] YAYAYAYYAYAYAYAYAYYAYAYAYAYYAYAYAYAYYAYAYYAYAYYAYAYYAYAYAYYAY")
-    print("this should only be in the top log")
-    print("[INFO] YAYAYAYYAYAYAYAYAYYAYAYAYAYYAYAYAYAYYAYAYYAYAYYAYAYYAYAYAYYAY")
+    print("[INFO] no thanks")
     print("result: ", a*b)
     return a*b
 
