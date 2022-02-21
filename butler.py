@@ -62,7 +62,6 @@ PropertyStructure = {
         "log": "log.txt",
         "imgs": "imgs",
         "figs": "figs",
-        "setup": "setup.json",
         "data": {
             "name":
                 "data",
@@ -92,7 +91,7 @@ def get_free_num(str_in: str):
     return int(split_str[1])+1
 
 
-def create_directory_tree_for_session(parent_dir: str):
+def create_directory_tree_for_session(parent_dir, setup):
     existing_directories = os.listdir()
     # get the lowest unused number that isn't lower than any other number in this dir
     lowest_num = max(map(get_free_num, existing_directories))
@@ -107,7 +106,7 @@ def create_directory_tree_for_session(parent_dir: str):
     with open(new_log_path, "w") as fp:
         pass
     with open(new_setup_json_path, "w+") as fp:
-        fp.write("{}")
+        json.dump(setup, fp)
         # print("written {} into", new_setup_json_path)
         pass
     with open(new_time_stamp_path, "w") as fp:
@@ -122,20 +121,26 @@ def create_directory_tree_for_session(parent_dir: str):
 def create_property_entry(parent_dir, meas_dict):
     j = os.path.join
     prop_struct = PropertyStructure["structure"]
-    new_prop_dir = j(parent_dir, meas_dict["meas_prop"])
+
+    ls_exp = os.listdir(parent_dir)
+    next_index = 0
+    # print(meas_dict["meas_prop"])
+    for n in ls_exp:
+        # print(n, meas_dict["meas_prop"] in n)
+        if meas_dict["meas_prop"] in n:  # "mass" in "mass_0"
+            next_index = int(n.split("_")[-1]) + 1
+
+    new_prop_dir = j(parent_dir, meas_dict["meas_prop"]+"_"+str(next_index))
     imgs_dir = j(new_prop_dir, prop_struct["imgs"])
     figs_dir = j(new_prop_dir, prop_struct["figs"])
     data_dir = j(new_prop_dir, prop_struct["data"]["name"])
     log_file = j(new_prop_dir, prop_struct["log"])
     meas_file = j(data_dir, prop_struct["data"]["structure"]["meas"]["name"])
-    setup_file = j(new_prop_dir, prop_struct["setup"])
+    # setup_file = j(new_prop_dir, prop_struct["setup"])
     new_dirs = [new_prop_dir, imgs_dir, figs_dir, data_dir]
-    new_files = [log_file, meas_file, setup_file]
+    new_files = [log_file, meas_file]
     for d in new_dirs:
         new_dir_name = d
-        # if os.path.isdir(d):
-
-            # new_dir_name = d +
         os.mkdir(new_dir_name)
     for f in new_files:
         with open(f, "w") as f:
@@ -147,7 +152,6 @@ def create_property_entry(parent_dir, meas_dict):
     ret["imgs"] = imgs_dir
     ret["figs"] = figs_dir
     ret["data"] = data_dir
-    ret["setup"] = setup_file
     ret["log"] = log_file
     ret["meas"] = meas_file
     return ret
@@ -174,45 +178,67 @@ class MeasObject:
 
 
 def butler(keywords, delimiter="\n", add_new_line=True,
-           keep_prints=True,
-           new_session=False, session_parent_dir=os.getcwd(),
-           meas_object_var_name="_meas", measured_object_type=MeasObject,
-           meas_setup="_setup"):
-    assert type(meas_object_var_name) == str, "measured object variable name must be string! & Only one per function"
+           catch_return=True, keep_prints=True,
+           session_parent_dir=os.getcwd(),
+           meas_object_name="", data_variables=()):
+    assert type(meas_object_name) == str, "measured object variable name must be string! & Only one per function"
     assert type(keywords) == str or type(keywords) == list, "keywords must be of type str or list[str]"
+
+    if "setup.json" in os.listdir(session_parent_dir):
+        with open(os.path.join(session_parent_dir, "setup.json"), "r") as fp:
+            butler.setup = json.load(fp)
+    else:
+        raise FileNotFoundError(
+            "setup.json is not located in "+session_parent_dir+
+            ". Please add a setup file in the format\n"
+            "{\"arm\": \"arm_name\", "
+            "\"gripper\": \"gripper_name\", "
+            "\"algorithm\": \"link_to_repository\", "
+            "\"camera\": \"camera_model_name\", "
+            "\"microphone\":\"microphone_model_name\"}\n"
+            "Leave fields empty if you are not using them.")
+    butler.session_paths = create_directory_tree_for_session(parent_dir=session_parent_dir, setup=butler.setup)
 
     def decorated(f):
         def wrapper(*args, **kwargs):
-            if new_session or not butler.session_exists:
-                butler.session_paths = create_directory_tree_for_session(parent_dir=session_parent_dir)
-            else:
-                pass
 
             # variables exist after this function:
             res, mystdout = cache_print(f, *args, **kwargs)
 
             """general log"""
-            with open(butler.session_paths["log"], "w") as fp:
-                # print(type(mystdout), mystdout)
+            with open(butler.session_paths["log"], "a") as fp:
                 fp.write(mystdout)
-            setup_dict = eval("butler."+meas_setup)
-            if not type(setup_dict) == dict:
-                setup_dict = setup_dict.__dict__
 
             """single property logs, etc."""
             """meas_prop, meas_type, params, values, meas_ID"""
-            # print(eval(meas_object_var_name))
-            new_measurement = eval("butler."+meas_object_var_name).__dict__
-            measured_property = new_measurement["meas_prop"]
+            if catch_return:
+                if type(res) == tuple:
+                    new_measurement = res[0].__dict__
+                else:
+                    new_measurement = res.__dict__
+            else:
+                new_measurement = eval("butler." + meas_object_name).__dict__
 
             property_paths = create_property_entry(butler.session_paths["exp"], new_measurement)
-            # into property_paths["log"] should go the prints caught by `keywords`
+            # the prints containing `keywords` should go into property_paths["log"]
             property_log = property_paths["log"]
 
-            add_quantity_setup(property_paths["setup"], setup_dict)
-            add_exp_setup(measured_property, setup_dict)
-            _update_internal_setup(measured_property, setup_dict)
+            _update_internal_setup(butler.setup)
 
+            variables_in_tuple = type(data_variables) == tuple and not type(data_variables) == dict
+            for v in data_variables:
+                new_v_name = v.replace("self.", "")
+                if "self." in v:
+                    data_variable = args[0].__dict__[new_v_name]
+                else:
+                    data_variable = eval(new_v_name)
+                if variables_in_tuple:
+                    with open(os.path.join(property_paths["data"], new_v_name+".json"), "w") as fp:
+                        json.dump(data_variable, fp)
+                else:
+                    with open(os.path.join(property_paths["data"], data_variables[v]+".json"), "w") as fp:
+                        json.dump(data_variable, fp)
+                print(data_variable)
             if keep_prints:
                 print(mystdout)
             tmp_keywords = keywords
@@ -251,8 +277,7 @@ def add_exp_setup(quantity, setup_dict):
         json.dump(current_exp_setup, fp)
 
 
-def _update_internal_setup(quantity, setup_dict):  # atm only the last used setup for the given quantity
-    butler.property_setup[quantity] = setup_dict
+def _update_internal_setup(setup_dict):  # atm only the last used setup for the given quantity
     setups_path = os.path.join(this_dir(), "setups")
     if not os.path.isdir(setups_path):
         butler.setups_folder = setups_path
@@ -264,27 +289,31 @@ def _update_internal_setup(quantity, setup_dict):  # atm only the last used setu
     with open(setups_path, "r") as fp:
         current_exp_setup = json.load(fp)
     with open(setups_path, "w") as fp:
-        get_time_string()
-        current_exp_setup[quantity] = setup_dict
+        current_exp_setup[get_time_string()] = setup_dict
         json.dump(current_exp_setup, fp)
 
 
-@butler("[INFO]", delimiter="\n", keep_prints=False, meas_object_var_name="andrej_meas", meas_setup="andrej_setup")
-def multiply(a, b):
-    # print(andrej_meas)
-    butler.andrej_setup = {"gripper": "2F85", "manipulator": "kinova lite 2"}
-    butler.andrej_meas = MeasObject("andrejprop", "andrej", "andrej2", "andrej3", 6549547974)
-    print("this should only be in the top log")
-    print("[INFO] no thanks")
-    print("result: ", a*b)
-    return a*b
+class BullshitClass:
+    def __init__(self):
+        self.bullshit_value = [1,2,3,4,5,6,7,8,9]
+
+    @butler("[INFO]", delimiter="\n", keep_prints=True, data_variables=("self.bullshit_value", ))
+    def multiply(self, a, b):
+        _setup = {"gripper": "2F85", "manipulator": "kinova lite 2"}
+        _meas = MeasObject("youngs_modulus", "continuous", {"mean": 500000, "std": 100000}, [1,5,8,5,2,7,5,1,3,8,7,1,5,8,85,1,5,8,8,4,12,65], 6)
+        print("this should only be in the top log")
+        print("[INFO] no thanks")
+        print("result: ", a*b)
+        # print(dir())
+        return _meas, a*b
 
 
 if __name__ == "__main__":
     # print("dude1")
     all_vars = dir()
-    c = multiply(37, 20)
-    c = multiply(39, 20)
+    bc = BullshitClass()
+    c = bc.multiply(37, 20)
+    c = bc.multiply(39, 20)
     # print(all_vars)
     # print(eval('andrej_meas').__dict__)
     print(eval("__file__"))
