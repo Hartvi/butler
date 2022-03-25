@@ -3,11 +3,26 @@ import os
 from io import StringIO
 from datetime import datetime
 import json
-
+import numpy as np
 
 # def get_next_number(in_str):
 #     for i in range(len(in_str)):
 #
+
+# l = [2, 5, 1, 3, 8, 5, 4]
+# b = ["el0", "el1", "el2", "el3", "el4", "el5", "el6"]
+# b = np.array(b)
+# print(b[np.argsort(l[::-1])])
+#
+# stringlol = "\033[1;31m Sample Text \033[0m"
+import re
+# line = re.sub(r"\033\[\d+m", "", stringlol)
+# line = re.match(pattern=r"\033\[\d+;\d+m", string=stringlol)#(r"\033\[\d*;?\d+m", "", stringlol)
+# print(line)
+# line = re.match(pattern=r"\033\[\d+m", string=stringlol)#(r"\033\[\d*;?\d+m", "", stringlol)
+line = re.sub(r"\033\[\d+(;\d+)?m", "", stringlol)
+print(line)
+
 
 
 def get_time_string():
@@ -180,7 +195,8 @@ class MeasObject:
 def butler(keywords, delimiter="\n", add_new_line=True,
            catch_return=True, keep_prints=True,
            session_parent_dir=os.getcwd(),
-           meas_object_name="", data_variables=()):
+           meas_object_name="", data_variables=(),
+           ignore_colours=True):
     assert type(meas_object_name) == str, "measured object variable name must be string! & Only one per function"
     assert type(keywords) == str or type(keywords) == list, "keywords must be of type str or list[str]"
 
@@ -204,10 +220,13 @@ def butler(keywords, delimiter="\n", add_new_line=True,
 
             # variables exist after this function:
             res, mystdout = cache_print(f, *args, **kwargs)
+            mynewstdout = mystdout
+            if ignore_colours:
+                mynewstdout = re.sub(r"\033\[\d+(;\d+)?m", "", mystdout)
 
             """general log"""
             with open(butler.session_paths["log"], "a") as fp:
-                fp.write(mystdout)
+                fp.write(mynewstdout)
 
             """single property logs, etc."""
             """meas_prop, meas_type, params, values, meas_ID"""
