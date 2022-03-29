@@ -3,6 +3,27 @@ This is a utility repository for organized data storage without the need to modi
 
 The crux of this project is the `@butler` decorator. Simply decorate a function and it saves variables and print outputs as you like.
 
+### TODO
+- make butler a class with a function called butler, then:
+```
+class Butler:
+    static_fields_only
+    etc
+    
+    @classmethod
+    def butler(cls, etc):
+        etc
+        def wrapper(etc):
+            def inner_func(etc):
+                etc
+                return etc
+            etc
+            return etc
+        etc
+        return etc
+
+butler = Butler.butler  # this dude can then have field so that the IDE recognizes them
+```
 
 ## how to use
 - inside the decorated function set the variables that you want to be saved as `butler.meas_object_to_be_saved = etc` & `butler.meas_setup = etc2`
