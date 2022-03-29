@@ -14,7 +14,8 @@ real_std_out = None
 class CustomStringIO(StringIO):
     def write(self, data):
         real_std_out.write(data)
-        super(StringIO, self).write(data)  # this is writing into BytesIO, so it might need `data.encode()`
+        # real_std_out.write("\n"+str(super(CustomStringIO, self).__dict__))
+        super(CustomStringIO, self).write(data)  # this is writing into BytesIO, so it might need `data.encode()`
 
 
 def dump_unnumpy(something, fp):
@@ -73,7 +74,7 @@ def cache_print(f, *args, **kwargs):
     """
     global real_std_out
     real_std_out = sys.stdout
-    sys.stdout = mystdout = StringIO()
+    sys.stdout = mystdout = CustomStringIO()
     ret = f(*args, **kwargs)
 
     sys.stdout = real_std_out
@@ -192,7 +193,7 @@ def create_property_entry(parent_dir, meas_dict):
             for _ in range(len(new_split)-1):
                 new_name += new_split[_] + "_"
             new_dir_name = new_name+str(new_index)
-        print(new_dir_name)
+        # print(new_dir_name)
         os.mkdir(new_dir_name)
     for f in new_files:
         with open(f, "w") as f:
@@ -302,6 +303,7 @@ def butler(keywords, delimiter="\n", add_new_line=True,
 #                         json.dump(data_variable, fp)
 #                 print(data_variable)
             if keep_prints:
+                # print("this is before the actually visible print")
                 print(mystdout)
             tmp_keywords = keywords
             if type(keywords) == str:
@@ -382,9 +384,9 @@ if __name__ == "__main__":
     bc = BullshitClass()
     # c = bc.multiply(37, 20)
     c = bc.multiply(39, 20)
-    c = bc.multiply(39, 20)
-    c = bc.multiply(39, 20)
-    c = bc.multiply(39, 20)
+    # c = bc.multiply(39, 20)
+    # c = bc.multiply(39, 20)
+    # c = bc.multiply(39, 20)
     # print(all_vars)
     # print(eval('andrej_meas').__dict__)
     print(eval("__file__"))
