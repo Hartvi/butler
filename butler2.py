@@ -1,10 +1,12 @@
+from __future__ import print_function
+
 import sys
 import os
 from io import BytesIO as StringIO
 from datetime import datetime
 import json
 import numpy as np
-
+import re
 
 real_std_out = None
 
@@ -18,6 +20,7 @@ class CustomStringIO(StringIO):
 def dump_unnumpy(something, fp):
     something = unnumpyify(something)
     json.dump(something, fp)
+
 
 def unnumpyify(something):
     if type(something) == np.ndarray:
@@ -39,25 +42,6 @@ def unnumpyify(something):
             elif type(k) == list:
                 something[i] = unnumpyify(k)
     return something
-
-
-# def get_next_number(in_str):
-#     for i in range(len(in_str)):
-#
-
-# l = [2, 5, 1, 3, 8, 5, 4]
-# b = ["el0", "el1", "el2", "el3", "el4", "el5", "el6"]
-# b = np.array(b)
-# print(b[np.argsort(l[::-1])])
-#
-# stringlol = "\033[1;31m Sample Text \033[0m"
-import re
-# line = re.sub(r"\033\[\d+m", "", stringlol)
-# line = re.match(pattern=r"\033\[\d+;\d+m", string=stringlol)#(r"\033\[\d*;?\d+m", "", stringlol)
-# print(line)
-# line = re.match(pattern=r"\033\[\d+m", string=stringlol)#(r"\033\[\d*;?\d+m", "", stringlol)
-
-
 
 
 def get_time_string():
@@ -103,6 +87,7 @@ DirectoryStructure = {
         {
             "log": "log.txt",
             "setup": "/home/robot3/vision_ws/src/ipalm_control/butler/setup.json",
+            # "setup": "setup.json",
             "timestamp": "time_stamp{}"
         }
 }
@@ -262,6 +247,7 @@ def butler(keywords, delimiter="\n", add_new_line=True,
             mynewstdout = mystdout
             if ignore_colours:
                 mynewstdout = re.sub(r"\033\[\d+(;\d+)?m", "", mystdout)
+                print(mynewstdout)
 
             """general log"""
             with open(butler.session_paths["log"], "a") as fp:
@@ -299,13 +285,13 @@ def butler(keywords, delimiter="\n", add_new_line=True,
                         # TODO CHECK THIS; JUST CHANGED HERE
                         dump_unnumpy(data_variable, fp)
 #                         json.dump(data_variable, fp)
-                print(data_variable)
+#                 print(data_variable)
             if keep_prints:
                 print(mystdout)
             tmp_keywords = keywords
             if type(keywords) == str:
                 tmp_keywords = [keywords, ]
-            print_split = mystdout.split(delimiter)
+            print_split = mynewstdout.split(delimiter)
             butlered_lines = ""
             for kwd in tmp_keywords:
                 for prnt in print_split:
@@ -372,11 +358,29 @@ def _update_internal_setup(setup_dict):  # atm only the last used setup for the 
 #         return _meas, a*b
 
 
+class BullshitClass:
+    def __init__(self):
+        self.bullshit_value = [1,2,3,4,5,6,7,8,9]
+
+    @butler("[INFO]", delimiter="\n", keep_prints=True, data_variables=("self.bullshit_value", ))
+    def multiply(self, a, b):
+        _setup = {"gripper": "2F85", "manipulator": "kinova lite 2"}
+        _meas = MeasObject("youngs_modulus", "continuous", {"mean": 500000, "std": 100000}, [1,5,8,5,2,7,5,1,3,8,7,1,5,8,85,1,5,8,8,4,12,65], 6)
+        print("this should only be in the top log")
+        print("[INFO] no thanks")
+
+        stringlol = "\033[1;31m Sample Text \033[0m"
+        print(stringlol)
+        print("result: ", a*b)
+        # print(dir())
+        return _meas, a*b
+
+
 if __name__ == "__main__":
     # print("dude1")
     all_vars = dir()
     bc = BullshitClass()
-    c = bc.multiply(37, 20)
+    # c = bc.multiply(37, 20)
     c = bc.multiply(39, 20)
     # print(all_vars)
     # print(eval('andrej_meas').__dict__)
