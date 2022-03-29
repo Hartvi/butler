@@ -86,8 +86,8 @@ DirectoryStructure = {
     "structure":
         {
             "log": "log.txt",
-            "setup": "/home/robot3/vision_ws/src/ipalm_control/butler/setup.json",
-            # "setup": "setup.json",
+            # "setup": "/home/robot3/vision_ws/src/ipalm_control/butler/setup.json",
+            "setup": "setup.json",
             "timestamp": "time_stamp{}"
         }
 }
@@ -160,6 +160,7 @@ def create_property_entry(parent_dir, meas_dict):
     prop_struct = PropertyStructure["structure"]
 
     ls_exp = os.listdir(parent_dir)
+    print(ls_exp)
     next_index = 0
     # print(meas_dict["meas_prop"])
     for n in ls_exp:
@@ -176,8 +177,22 @@ def create_property_entry(parent_dir, meas_dict):
     # setup_file = j(new_prop_dir, prop_struct["setup"])
     new_dirs = [new_prop_dir, imgs_dir, figs_dir, data_dir]
     new_files = [log_file, meas_file]
+    # print(new_prop_dir)
+    # os.mkdir(new_prop_dir)
     for d in new_dirs:
         new_dir_name = d
+        new_index = 0
+        while os.path.isdir(new_dir_name):  # idk why but just in case the directory exists here
+            new_split = new_dir_name.split("_")
+            try:
+                new_index = int(new_split[-1])+1
+            except:
+                new_index = 0
+            new_name = ""
+            for _ in range(len(new_split)-1):
+                new_name += new_split[_] + "_"
+            new_dir_name = new_name+str(new_index)
+        print(new_dir_name)
         os.mkdir(new_dir_name)
     for f in new_files:
         with open(f, "w") as f:
@@ -343,37 +358,22 @@ def _update_internal_setup(setup_dict):  # atm only the last used setup for the 
 #         json.dump(current_exp_setup, fp)
 
 
-# class BullshitClass:
-#     def __init__(self):
-#         self.bullshit_value = [1,2,3,4,5,6,7,8,9]
-#
-#     @butler("[INFO]", delimiter="\n", keep_prints=True, data_variables=("self.bullshit_value", ))
-#     def multiply(self, a, b):
-#         _setup = {"gripper": "2F85", "manipulator": "kinova lite 2"}
-#         _meas = MeasObject("youngs_modulus", "continuous", {"mean": 500000, "std": 100000}, [1,5,8,5,2,7,5,1,3,8,7,1,5,8,85,1,5,8,8,4,12,65], 6)
-#         print("this should only be in the top log")
-#         print("[INFO] no thanks")
-#         print("result: ", a*b)
-#         # print(dir())
-#         return _meas, a*b
+class BullshitClass:
+    def __init__(self):
+        self.bullshit_value = [1,2,3,4,5,6,7,8,9]
 
+    @butler("[INFO]", delimiter="\n", keep_prints=True, data_variables=("self.bullshit_value", ))
+    def multiply(self, a, b):
+        _setup = {"gripper": "2F85", "manipulator": "kinova lite 2"}
+        _meas = MeasObject("youngs-modulus", "continuous", {"mean": 500000, "std": 100000}, [1,5,8,5,2,7,5,1,3,8,7,1,5,8,85,1,5,8,8,4,12,65], 6)
+        print("this should only be in the top log")
+        print("[INFO] no thanks")
 
-# class BullshitClass:
-#     def __init__(self):
-#         self.bullshit_value = [1,2,3,4,5,6,7,8,9]
-#
-#     @butler("[INFO]", delimiter="\n", keep_prints=True, data_variables=("self.bullshit_value", ))
-#     def multiply(self, a, b):
-#         _setup = {"gripper": "2F85", "manipulator": "kinova lite 2"}
-#         _meas = MeasObject("youngs_modulus", "continuous", {"mean": 500000, "std": 100000}, [1,5,8,5,2,7,5,1,3,8,7,1,5,8,85,1,5,8,8,4,12,65], 6)
-#         print("this should only be in the top log")
-#         print("[INFO] no thanks")
-#
-#         stringlol = "\033[1;31m Sample Text \033[0m"
-#         print(stringlol)
-#         print("result: ", a*b)
-#         # print(dir())
-#         return _meas, a*b
+        stringlol = "\033[1;31m Sample Text \033[0m"
+        print(stringlol)
+        print("result: ", a*b)
+        # print(dir())
+        return _meas, a*b
 
 
 if __name__ == "__main__":
@@ -381,6 +381,9 @@ if __name__ == "__main__":
     all_vars = dir()
     bc = BullshitClass()
     # c = bc.multiply(37, 20)
+    c = bc.multiply(39, 20)
+    c = bc.multiply(39, 20)
+    c = bc.multiply(39, 20)
     c = bc.multiply(39, 20)
     # print(all_vars)
     # print(eval('andrej_meas').__dict__)
