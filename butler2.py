@@ -5,6 +5,16 @@ from datetime import datetime
 import json
 import numpy as np
 
+
+real_std_out = None
+
+
+class CustomStringIO(StringIO):
+    def write(self, data):
+        real_std_out.write(data)
+        super(StringIO, self).write(data)  # this is writing into BytesIO, so it might need `data.encode()`
+
+
 def dump_unnumpy(something, fp):
     something = unnumpyify(something)
     json.dump(something, fp)
@@ -77,11 +87,12 @@ def cache_print(f, *args, **kwargs):
     :param kwargs: kwargs
     :return: (f(args, kwargs), stdout of the function as a string)
     """
-    old_stdout = sys.stdout
+    global real_std_out
+    real_std_out = sys.stdout
     sys.stdout = mystdout = StringIO()
     ret = f(*args, **kwargs)
 
-    sys.stdout = old_stdout
+    sys.stdout = real_std_out
     return ret, mystdout.getvalue()
 
 
