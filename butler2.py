@@ -5,6 +5,9 @@ from datetime import datetime
 import json
 import numpy as np
 
+def dump_unnumpy(something, fp):
+    something = unnumpyify(something)
+    json.dump(something, fp)
 
 def unnumpyify(something):
     if type(something) == np.ndarray:
@@ -143,7 +146,8 @@ def create_directory_tree_for_session(parent_dir, setup):
     with open(new_log_path, "w") as fp:
         pass
     with open(new_setup_json_path, "w+") as fp:
-        json.dump(setup, fp)
+        dump_unnumpy(setup, fp)
+#         json.dump(setup, fp)
         # print("written {} into", new_setup_json_path)
         pass
     with open(new_time_stamp_path, "w") as fp:
@@ -277,10 +281,13 @@ def butler(keywords, delimiter="\n", add_new_line=True,
                     data_variable = eval(new_v_name)
                 if variables_in_tuple:
                     with open(os.path.join(property_paths["data"], new_v_name+".json"), "w") as fp:
-                        json.dump(data_variable, fp)
+                        dump_unnumpy(data_variable, fp)  # TODO CHECK THIS; JUST CHANGED HERE
+#                         json.dump(data_variable, fp)
                 else:
                     with open(os.path.join(property_paths["data"], data_variables[v]+".json"), "w") as fp:
-                        json.dump(data_variable, fp)
+                        # TODO CHECK THIS; JUST CHANGED HERE
+                        dump_unnumpy(data_variable, fp)
+#                         json.dump(data_variable, fp)
                 print(data_variable)
             if keep_prints:
                 print(mystdout)
@@ -308,7 +315,8 @@ butler.property_setup = dict()
 
 def add_quantity_setup(path_to_setup, setup_dict):
     with open(path_to_setup, "w") as fp:
-        json.dump(setup_dict, fp)
+        dump_unnumpy(setup_dict, fp)  # TODO CHECK THIS; JUST CHANGED HERE
+#         json.dump(setup_dict, fp)
 
 
 def add_exp_setup(quantity, setup_dict):
@@ -317,7 +325,8 @@ def add_exp_setup(quantity, setup_dict):
         current_exp_setup = json.load(fp)
     with open(setup_path, "w") as fp:
         current_exp_setup[quantity] = setup_dict
-        json.dump(current_exp_setup, fp)
+        dump_unnumpy(current_exp_setup, fp)  # TODO CHECK THIS; JUST CHANGED HERE
+#         json.dump(current_exp_setup, fp)
 
 
 def _update_internal_setup(setup_dict):  # atm only the last used setup for the given quantity
@@ -333,7 +342,8 @@ def _update_internal_setup(setup_dict):  # atm only the last used setup for the 
         current_exp_setup = json.load(fp)
     with open(setups_path, "w") as fp:
         current_exp_setup[get_time_string()] = setup_dict
-        json.dump(current_exp_setup, fp)
+        dump_unnumpy(current_exp_setup, fp)  # TODO CHECK THIS; JUST CHANGED HERE
+#         json.dump(current_exp_setup, fp)
 
 
 # class BullshitClass:
