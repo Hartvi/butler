@@ -247,7 +247,7 @@ def butler(keywords, delimiter="\n", add_new_line=True,
             mynewstdout = mystdout
             if ignore_colours:
                 mynewstdout = re.sub(r"\033\[\d+(;\d+)?m", "", mystdout)
-                print(mynewstdout)
+                # print(mynewstdout)
 
             """general log"""
             with open(butler.session_paths["log"], "a") as fp:
@@ -358,22 +358,22 @@ def _update_internal_setup(setup_dict):  # atm only the last used setup for the 
 #         return _meas, a*b
 
 
-class BullshitClass:
-    def __init__(self):
-        self.bullshit_value = [1,2,3,4,5,6,7,8,9]
-
-    @butler("[INFO]", delimiter="\n", keep_prints=True, data_variables=("self.bullshit_value", ))
-    def multiply(self, a, b):
-        _setup = {"gripper": "2F85", "manipulator": "kinova lite 2"}
-        _meas = MeasObject("youngs_modulus", "continuous", {"mean": 500000, "std": 100000}, [1,5,8,5,2,7,5,1,3,8,7,1,5,8,85,1,5,8,8,4,12,65], 6)
-        print("this should only be in the top log")
-        print("[INFO] no thanks")
-
-        stringlol = "\033[1;31m Sample Text \033[0m"
-        print(stringlol)
-        print("result: ", a*b)
-        # print(dir())
-        return _meas, a*b
+# class BullshitClass:
+#     def __init__(self):
+#         self.bullshit_value = [1,2,3,4,5,6,7,8,9]
+#
+#     @butler("[INFO]", delimiter="\n", keep_prints=True, data_variables=("self.bullshit_value", ))
+#     def multiply(self, a, b):
+#         _setup = {"gripper": "2F85", "manipulator": "kinova lite 2"}
+#         _meas = MeasObject("youngs_modulus", "continuous", {"mean": 500000, "std": 100000}, [1,5,8,5,2,7,5,1,3,8,7,1,5,8,85,1,5,8,8,4,12,65], 6)
+#         print("this should only be in the top log")
+#         print("[INFO] no thanks")
+#
+#         stringlol = "\033[1;31m Sample Text \033[0m"
+#         print(stringlol)
+#         print("result: ", a*b)
+#         # print(dir())
+#         return _meas, a*b
 
 
 if __name__ == "__main__":
