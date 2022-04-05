@@ -23,12 +23,12 @@ import re
 # line = re.sub(r"\033\[\d+(;\d+)?m", "", stringlol)
 # print(line)
 
-real_std_out = None
+_real_std_out = None
 
 
 class CustomStringIO(StringIO):
     def write(self, data):
-        real_std_out.write(data)
+        __real_std_out.write(data)
         super().write(data)
 
 
@@ -59,7 +59,7 @@ def cache_print(f, *args, **kwargs):
     :param kwargs: kwargs
     :return: (f(args, kwargs), stdout of the function as a string)
     """
-    global real_std_out
+    global _real_std_out
     real_std_out = sys.stdout
     print(type(real_std_out))
     sys.stdout = mystdout = CustomStringIO()

@@ -7,9 +7,11 @@ from datetime import datetime
 import json
 import numpy as np
 import re
+import atexit
 from copy import deepcopy
 
-real_std_out = None
+__all__ = ["dump_numpy_proof", "numpy_to_native", "PropertyMeasurement", "butler"]
+_real_std_out = None
 
 
 def dump_numpy_proof(something, fp):
@@ -33,7 +35,7 @@ def numpy_to_native(something, inplace=False):
             elif type(new_something[k]) == list:
                 new_something[k] = numpy_to_native(new_something[k])
     elif type(new_something) == list:
-        for i,k in enumerate(new_something):
+        for i, k in enumerate(new_something):
             if type(k) == np.ndarray:
                 new_something[i] = k.tolist()
             if type(k) == dict:
@@ -59,7 +61,7 @@ def numpy_to_native(something, inplace=False):
 
 class CustomStringIO(StringIO):
     def write(self, data):
-        real_std_out.write(data)
+        _real_std_out.write(data)
         # real_std_out.write("\n"+str(super(CustomStringIO, self).__dict__))
         super(CustomStringIO, self).write(data)  # this is writing into BytesIO, so it might need `data.encode()`
 
@@ -83,18 +85,18 @@ def cache_print(f, *args, **kwargs):
     :param kwargs: kwargs
     :return: (f(args, kwargs), stdout of the function as a string)
     """
-    global real_std_out
-    real_std_out = sys.stdout
+    global _real_std_out
+    _real_std_out = sys.stdout
     sys.stdout = mystdout = CustomStringIO()
     ret = f(*args, **kwargs)
 
-    sys.stdout = real_std_out
+    sys.stdout = _real_std_out
     return ret, mystdout.getvalue()
 
 
 DirectoryStructure = {
     "name":
-        "exp_{}",
+        "experiment_{}",
     "structure":
         {
             "log": "log.txt",
@@ -117,7 +119,7 @@ PropertyStructure = {
                 {
                     "meas":
                         {
-                            "name": "meas.json",
+                            "name": "measurement.json",
                             "properties":
                                 [
                                     "avg",
@@ -134,9 +136,140 @@ class Butler:
     session_exists = False
     session_paths = None
     property_setup = dict()
+    context = list()
+    counter = 0
+    property_object_property_name = "property_name"
 
     @staticmethod
-    def get_free_num(str_in):
+    def __call__(keywords=(),
+                 keep_keywords=True,
+                 setup_file="setup.json",
+                 delimiter="\n",
+                 add_new_line=True,
+                 read_return=True,
+                 session_parent_dir=os.path.dirname(__file__),
+                 output_variable_name="",
+                 data_variables=(),
+                 ignore_colours=True,
+                 create_new_exp_on_run=False):
+        assert type(output_variable_name) == str, "measured object variable name must be string! & Only one per function"
+
+        assert type(keywords) == str or type(keywords) == list or type(keywords) == tuple, \
+            "keywords must be of type str or list[str]"
+
+        try:
+            with open(setup_file, "r") as fp:
+                Butler.setup = json.load(fp)
+        except IOError as e:
+            raise IOError(
+                "\n1. setup.json is not located in session_parent_dir=" + session_parent_dir +
+                " or \n2. the `session_parent_dir` containing the `setup.json` is not specified.\n"
+                "Please add a setup file in the format\n"
+                "{\"arm\": \"arm_name\", "
+                "\"gripper\": \"gripper_name\", "
+                "\"algorithm\": \"http://link_to_repository/\", "
+                "\"camera\": \"camera_model_name\", "
+                "\"microphone\":\"microphone_model_name\", "
+                "\"other:\" \"other_modalities\"}\n"
+                "Leave fields empty if you are not using them.")
+        if Butler.session_paths is None and not create_new_exp_on_run:
+            Butler.session_paths = Butler._create_directory_tree_for_session(parent_dir=session_parent_dir,
+                                                                             setup=Butler.setup)
+
+        def decorated(f):
+            def wrapper(*args, **kwargs):
+                if create_new_exp_on_run:
+                    Butler.session_paths = Butler._create_directory_tree_for_session(parent_dir=session_parent_dir,
+                                                                                     setup=Butler.setup)
+                res, captured_std_out = cache_print(f, *args, **kwargs)
+                processed_std_out = captured_std_out
+                if ignore_colours:
+                    processed_std_out = re.sub(r"\033\[\d+(;\d+)?m", "", captured_std_out)
+
+                """general log"""
+                with open(Butler.session_paths["log"], "a") as fp:
+                    fp.write(processed_std_out)
+
+                """single property logs, etc."""
+                """meas_prop, meas_type, params, values, meas_ID"""
+
+                if read_return:
+                    if type(res) == tuple:
+                        output_variable = res[0]
+                    else:
+                        output_variable = res
+                else:
+                    output_variable = eval(output_variable_name)
+
+                if type(output_variable) == dict:
+                    new_measurement = output_variable
+                elif isinstance(output_variable, PropertyMeasurement):
+                    new_measurement = output_variable.__dict__
+                else:
+                    raise TypeError(
+                        "for return value or specified output_variable is not of type [dict, PropertyMeasurement]"
+                    )
+
+                property_paths = Butler._create_property_entry(Butler.session_paths["exp"], new_measurement)
+                # the prints containing `keywords` go into property_paths["log"]
+                property_log = property_paths["log"]
+
+                Butler._update_internal_setup(Butler.setup)
+
+                """
+                data variables should know where they come from:
+                data_vars = [{"var_name": {"values": var_name, "source": "setup_el_name"-must be in setup values}}]
+                """
+                data_variables_listified = data_variables
+                if type(data_variables) not in {np.ndarray, tuple, list}:
+                    if type(data_variables) == dict:
+                        data_variables_listified = (data_variables,)
+                    else:
+                        raise TypeError(
+                            "data_variables is not of type [iterable[dict], dict]: " +
+                            str(type(data_variables_listified))
+                        )
+                for varname in data_variables_listified:
+                    new_v_name = varname.replace("self.", "")
+                    if "self." in varname:
+                        data_variable = args[0].__dict__[new_v_name]  # for class functions `func(self, arg1)`
+                    else:
+                        data_variable = eval(new_v_name)
+                    assert "values" in data_variable, \
+                        "\"values\" key not in variable " + str(varname) + ": " + str(data_variable)
+                    assert "source" in data_variable, \
+                        "\"source\" key not in variable " + str(varname) + ": " + str(data_variable)
+                    with open(os.path.join(property_paths["data"], new_v_name + ".json"), "w") as fp:
+                        dump_numpy_proof(data_variable, fp)
+                object_context = Butler._pop_object_context()
+                if object_context:
+                    with open(os.path.join(property_paths["data"], "object_context.json"), "w") as fp:
+                        dump_numpy_proof(object_context, fp)
+
+                tmp_keywords = keywords
+                if type(keywords) == str:
+                    tmp_keywords = (keywords,)
+                print_split = processed_std_out.split(delimiter)
+                butlered_lines = ""
+                for kwd in tmp_keywords:
+                    for prnt in print_split:
+                        if kwd in prnt:
+                            if keep_keywords:
+                                butlered_lines += prnt + ("\n" if add_new_line else "")
+                            else:
+                                butlered_lines += prnt.replace(kwd, "") + ("\n" if add_new_line else "")
+
+                # butlered_lines goes to experiment_{}/meas_prop/log.txt
+                with open(property_log, "w") as fp:
+                    fp.write(butlered_lines)
+                return res
+
+            return wrapper
+
+        return decorated
+
+    @staticmethod
+    def _get_free_num(str_in):
         split_str = str_in.split("_")
         if os.path.isfile(str_in):
             return 0
@@ -145,10 +278,10 @@ class Butler:
         return int(split_str[1]) + 1
 
     @staticmethod
-    def create_directory_tree_for_session(parent_dir, setup):
+    def _create_directory_tree_for_session(parent_dir, setup):
         existing_directories = os.listdir(os.path.dirname(__file__))
         # get the lowest unused number that isn't lower than any other number in this dir
-        lowest_num = max(map(Butler.get_free_num, existing_directories))
+        lowest_num = max(map(Butler._get_free_num, existing_directories))
 
         new_exp_path = os.path.join(parent_dir, DirectoryStructure["name"].format(lowest_num))
         new_log_path = os.path.join(new_exp_path, DirectoryStructure["structure"]["log"])
@@ -171,17 +304,17 @@ class Butler:
         return ret
 
     @staticmethod
-    def create_property_entry(parent_dir, meas_dict):
+    def _create_property_entry(parent_dir, meas_dict):
         j = os.path.join
         prop_struct = PropertyStructure["structure"]
 
         ls_exp = os.listdir(parent_dir)
         next_index = 0
         for n in ls_exp:
-            if meas_dict["meas_prop"] in n:  # "mass" in "mass_0"
+            if meas_dict[Butler.property_object_property_name] in n:  # "mass" in "mass_0"
                 next_index = int(n.split("_")[-1]) + 1
 
-        new_prop_dir = j(parent_dir, meas_dict["meas_prop"] + "_" + str(next_index))
+        new_prop_dir = j(parent_dir, meas_dict[Butler.property_object_property_name] + "_" + str(next_index))
         imgs_dir = j(new_prop_dir, prop_struct["imgs"])
         figs_dir = j(new_prop_dir, prop_struct["figs"])
         data_dir = j(new_prop_dir, prop_struct["data"]["name"])
@@ -235,104 +368,67 @@ class Butler:
             dump_numpy_proof(current_exp_setup, fp)
 
     @staticmethod
-    def butler(keywords=(),
-               keep_keywords=True,
-               setup_file="setup.json",
-               delimiter="\n",
-               add_new_line=True,
-               catch_return=True,
-               session_parent_dir=os.path.dirname(__file__),
-               meas_object_name="",
-               data_variables=(),
-               ignore_colours=True,
-               create_new_exp_on_run=False):
-        assert type(meas_object_name) == str, "measured object variable name must be string! & Only one per function"
-        assert type(keywords) == str or type(keywords) == list or type(keywords) == tuple,\
-            "keywords must be of type str or list[str]"
+    def add_object_context(context, override_recommendation=False):
+        assert type(context) == dict, "object context must be in the format {key: value for (key, value) in key_values}"
+        context_values = context.values()
+        context_keys = context.keys()
+        assert sum(map(lambda x: type(x) == str, context_keys)) == \
+               sum(map(lambda x: type(x) == str, context_values)) == len(context_values), \
+               "context dictionary must have string keys and values: "+str(context)
 
-        try:
-            with open(setup_file, "r") as fp:
-                Butler.setup = json.load(fp)
-        except IOError as e:
-            raise IOError(
-                "\n1. setup.json is not located in session_parent_dir="+session_parent_dir+
-                " or \n2. the `session_parent_dir` containing the `setup.json` is not specified.\n"
-                "Please add a setup file in the format\n"
-                "{\"arm\": \"arm_name\", "
-                "\"gripper\": \"gripper_name\", "
-                "\"algorithm\": \"http://link_to_repository/\", "
-                "\"camera\": \"camera_model_name\", "
-                "\"microphone\":\"microphone_model_name\", "
-                "\"other:\" \"other_modalities\"}\n"
-                "Leave fields empty if you are not using them.")
-        if Butler.session_paths is None and not create_new_exp_on_run:
-            Butler.session_paths = Butler.create_directory_tree_for_session(parent_dir=session_parent_dir, setup=Butler.setup)
+        if not override_recommendation:
+            if not ("maker" in context or
+                    "common_name" in context or
+                    "dataset" in context or
+                    ("dataset" in context and "dataset_id" in context)):
+                raise ValueError("Butler: It is recommended to set the object context as "
+                      "\"maker\" or \"common_name\" or (\"dataset\"  (and \"dataset_id\" optional))")
+        Butler.context.append(context)
 
-        def decorated(f):
-            def wrapper(*args, **kwargs):
-                if create_new_exp_on_run:
-                    Butler.session_paths = Butler.create_directory_tree_for_session(parent_dir=session_parent_dir,
-                                                                                    setup=Butler.setup)
-                res, captured_std_out = cache_print(f, *args, **kwargs)
-                processed_std_out = captured_std_out
-                if ignore_colours:
-                    processed_std_out = re.sub(r"\033\[\d+(;\d+)?m", "", captured_std_out)
-
-                """general log"""
-                with open(Butler.session_paths["log"], "a") as fp:
-                    fp.write(processed_std_out)
-
-                """single property logs, etc."""
-                """meas_prop, meas_type, params, values, meas_ID"""
-                if catch_return:
-                    if type(res) == tuple:
-                        new_measurement = res[0].__dict__
-                    else:
-                        new_measurement = res.__dict__
-                else:
-                    new_measurement = eval("butler." + meas_object_name).__dict__
-
-                property_paths = Butler.create_property_entry(Butler.session_paths["exp"], new_measurement)
-                # the prints containing `keywords` go into property_paths["log"]
-                property_log = property_paths["log"]
-
-                Butler._update_internal_setup(Butler.setup)
-
-                variables_in_tuple = type(data_variables) == tuple and not type(data_variables) == dict
-                for v in data_variables:
-                    new_v_name = v.replace("self.", "")
-                    if "self." in v:
-                        data_variable = args[0].__dict__[new_v_name]
-                    else:
-                        data_variable = eval(new_v_name)
-                    if variables_in_tuple:
-                        with open(os.path.join(property_paths["data"], new_v_name+".json"), "w") as fp:
-                            dump_numpy_proof(data_variable, fp)
-                    else:
-                        with open(os.path.join(property_paths["data"], data_variables[v]+".json"), "w") as fp:
-                            dump_numpy_proof(data_variable, fp)
-                tmp_keywords = keywords
-                if type(keywords) == str:
-                    tmp_keywords = [keywords, ]
-                print_split = processed_std_out.split(delimiter)
-                butlered_lines = ""
-                for kwd in tmp_keywords:
-                    for prnt in print_split:
-                        if kwd in prnt:
-                            if keep_keywords:
-                                butlered_lines += prnt + ("\n" if add_new_line else "")
-                            else:
-                                butlered_lines += prnt.replace(kwd, "") + ("\n" if add_new_line else "")
-
-                # butlered_lines goes to exp_{}/meas_prop/log.txt
-                with open(property_log, "w") as fp:
-                    fp.write(butlered_lines)
-                return res
-            return wrapper
-        return decorated
+    @staticmethod
+    def _pop_object_context():
+        print(Butler.context)
+        if len(Butler.context) != 0:
+            ret = Butler.context.pop(0)
+            print(Butler.context)
+            return ret
+        else:
+            return None
 
 
-butler = Butler.butler  # to make `from butler2 import butler` possible
+butler = Butler()  # to make `from butler2 import butler` possible and to have its fields recognized by IDEs
+
+
+class PropertyMeasurement:
+    """
+    "density", "continuous", {"mean": 100, "sigma": 10}, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], meas_ID=1
+    """
+
+    def __init__(self, property_name=None, measurement_type=None, parameters=None, units=None, grasp=None, values=None, other=None, other_file=None, **kwargs):
+        self.property_name = property_name  # eg mass, elasticity, vision, sound
+        self.measurement_type = measurement_type  # continuous, discrete
+        self.parameters = parameters  #
+        self.units = units
+        self.grasp = grasp
+        self.values = values
+        self.other = other
+        self.other_file = other_file
+        for k in kwargs:
+            exec("self."+k+"="+str(kwargs[k]))
+
+    def __repr__(self):
+        rep = ""
+        if hasattr(self, "meas_ID"):
+            rep += "------ID:{}------\n".format(self.meas_ID)
+        rep += "Property: {} of type: {}\n".format(self.property_name, self.measurement_type)
+        rep += "Params: {}\n".format(self.parameters)
+        rep += "Some Values: {}...{}\n".format(self.values[0:5], self.values[-5:])
+        if self.other is not None:
+            rep += "Other: {}\n".format(self.other)
+        if self.other_file is not None:
+            rep += "Other file: {}\n".format(self.other_file)
+
+        return rep
 
 
 if __name__ == "__main__":
@@ -341,11 +437,12 @@ if __name__ == "__main__":
         "density", "continuous", {"mean": 100, "sigma": 10}, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], meas_ID=1
         """
 
-        def __init__(self, meas_prop, meas_type, params, values, meas_ID):
+        def __init__(self, meas_prop, meas_type, params, values, units, meas_ID):
             self.meas_prop = meas_prop  # eg mass, elasticity, vision, sound
             self.meas_type = meas_type  # continuous, discrete
             self.params = params  #
             self.values = values
+            self.units = units
             self.meas_ID = meas_ID
 
         def __repr__(self):
@@ -359,13 +456,15 @@ if __name__ == "__main__":
 
     class TestClass:
         def __init__(self):
-            self.test_value1 = [1, 2, 3, 4, 5, 6, 7, 8, 9]
-            self.test_value2 = [9, 8, 7, 6, 5, 6, 7, 8, 9]
+            self.test_value1 = {"values": {"position": [1, 2, 3, 4, 5, 6, 7, 8, 9]}, "source": "gripper_name"}
+            self.test_value2 = {"values": [9, 8, 7, 6, 5, 6, 7, 8, 9], "source": "gripper_name"}
+            self.test_value3 = {"values": {"current": [1, 2, 3, 4, 5, 6, 7, 8, 9]}, "source": "arm_name"}
 
-        @butler("[INFO]", delimiter="\n", data_variables=("self.test_value1",), create_new_exp_on_run=True)
+        @butler(keywords="[INFO]", delimiter="\n", data_variables=("self.test_value2", "self.test_value3"), create_new_exp_on_run=True)
         def multiply(self, a, b):
-            _meas = MeasObject("elasticity", "continuous", {"mean": 500000, "std": 100000},
-                               [1, 5, 8, 5, 2, 7, 5, 1, 3, 8, 7, 1, 5, 8, 85, 1, 5, 8, 8, 4, 12, 65], 6)
+            _meas = PropertyMeasurement("elasticity", "continuous", {"mean": 500000, "std": 100000},
+                                        grasp={"position": [0.1, 0.2, 0.3], "rotation": [0.5, 0.9, 0.7]},
+                                        values=self.test_value1, units="Pa", meas_ID=6)
             print("this should only be in the top log")
             print("[INFO] no thanks")
 
@@ -373,13 +472,16 @@ if __name__ == "__main__":
             print(stringlol)
             print("result: ", a * b)
             # print(dir())
+            Butler.add_object_context({"maker": "coca_cola"}, override_recommendation=False)
             return _meas, a * b
 
-        @butler("[INFO]", delimiter="\n", keep_keywords=False, data_variables=("self.test_value2",),
+        @butler(keywords="[INFO]", delimiter="\n", keep_keywords=False, data_variables=("self.test_value2",),
                 create_new_exp_on_run=True)
         def divide(self, a, b):
-            _meas = MeasObject("stiffness", "continuous", {"mean": 500000, "std": 100000},
-                               [1, 5, 8, 5, 2, 7, 5, 1, 3, 8, 7, 1, 5, 8, 85, 1, 5, 8, 8, 4, 12, 65], 6)
+            _meas = PropertyMeasurement(property_name="stiffness",
+                                        measurement_type="categorical",
+                                        parameters={"cat1": 0.5, "cat2": 0.3, "cat3": 0.2},
+                                        meas_ID=6)
             print("this should only be in the top log")
             print("[INFO] divide baby [INFO]")
             stringlol = "\033[1;31m Sample Text \033[0m"
@@ -390,11 +492,16 @@ if __name__ == "__main__":
             return _meas, a / b
 
 
+    # print(this_dir())
+    import shutil
+    for _ in os.listdir(this_dir()):
+        if os.path.isdir(_):
+            rematch = re.findall(pattern=r"experiment_\d", string=_)
+            if len(rematch) == 1:
+                shutil.rmtree(_)
+    # print(os.listdir(this_dir()))
     all_vars = dir()
     bc = TestClass()
     c = bc.multiply(39, 20)
     d = bc.divide(40, 20)
     print(eval("__file__"))
-
-
-

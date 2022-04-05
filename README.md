@@ -3,8 +3,15 @@ This is a utility repository for organized data storage without the need to modi
 
 The crux of this project is the `@butler` decorator. Simply decorate a function and it saves variables and print outputs as you like.
 
+### 04/04-05
+- make steward
+  - done: continuous property class processing
+  - todo: categorical property class processing
+  - todo: generalize `PropertyMeasurement` class so it also fits andrej's class - in addition to `.parameters` also `.params` and all those shortcuts
+
 ### 04/03
 - made butler into a static class
+- TODO: context setting & getting
 
 ### TODO
 - make butler a class with a function called butler, then:
