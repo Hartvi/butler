@@ -132,13 +132,21 @@ PropertyStructure = {
 }
 
 
+def get_set(the_set, the_dict):
+    for item in the_set:
+        the_item = the_dict.get(item)
+        if the_item is not None:
+            return the_item
+    return None
+
+
 class Butler:
     session_exists = False
     session_paths = None
     property_setup = dict()
     context = list()
     counter = 0
-    property_object_property_name = "property_name"
+    property_object_property_name = {"prop", "name", "property_name", "property", "meas_prop", "meas_name", "measured_property", "measurement_property", "measured_name", "measurement_name"}
 
     @staticmethod
     def __call__(keywords=(),
@@ -150,6 +158,8 @@ class Butler:
                  session_parent_dir=os.path.dirname(__file__),
                  output_variable_name="",
                  data_variables=(),
+                 img_files=(),
+                 fig_files=(),
                  ignore_colours=True,
                  create_new_exp_on_run=False):
         assert type(output_variable_name) == str, "measured object variable name must be string! & Only one per function"
@@ -183,6 +193,7 @@ class Butler:
                                                                                      setup=Butler.setup)
                 res, captured_std_out = cache_print(f, *args, **kwargs)
                 processed_std_out = captured_std_out
+
                 if ignore_colours:
                     processed_std_out = re.sub(r"\033\[\d+(;\d+)?m", "", captured_std_out)
 
@@ -213,7 +224,17 @@ class Butler:
                         "for return value or specified output_variable is not of type [dict, PropertyMeasurement]"
                     )
 
+                # print("new measurement: ", new_measurement)
+                # exit(1)
                 property_paths = Butler._create_property_entry(Butler.session_paths["exp"], new_measurement)
+                if len(fig_files) > 0:
+                    import shutil
+                    for fig_file in fig_files:
+                        shutil.copy2(fig_file, property_paths["figs"])
+                if len(img_files) > 0:
+                    import shutil
+                    for img_file in img_files:
+                        shutil.copy2(img_file, property_paths["imgs"])
                 # the prints containing `keywords` go into property_paths["log"]
                 property_log = property_paths["log"]
 
@@ -276,15 +297,16 @@ class Butler:
         split_str = str_in.split("_")
         if os.path.isfile(str_in):
             return 0
-        if len(split_str) != 2:
+        if "experiment_" in str_in:
+            return int(split_str[-1]) + 1
+        else:
             return 0
-        return int(split_str[1]) + 1
 
     @staticmethod
     def _create_directory_tree_for_session(parent_dir, setup):
         existing_directories = os.listdir(os.path.dirname(__file__))
         # get the lowest unused number that isn't lower than any other number in this dir
-        lowest_num = max(map(Butler._get_free_num, existing_directories))
+        lowest_num = max(map(Butler._get_free_num, [os.path.join(os.path.dirname(__file__), exdir) for exdir in existing_directories]))
 
         new_exp_path = os.path.join(parent_dir, DirectoryStructure["name"].format(lowest_num))
         new_log_path = os.path.join(new_exp_path, DirectoryStructure["structure"]["log"])
@@ -308,16 +330,18 @@ class Butler:
 
     @staticmethod
     def _create_property_entry(parent_dir, meas_dict):
+        # print("BULTER: CREATING PROPERTY ENTRYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY")
         j = os.path.join
         prop_struct = PropertyStructure["structure"]
 
         ls_exp = os.listdir(parent_dir)
         next_index = 0
         for n in ls_exp:
-            if meas_dict[Butler.property_object_property_name] in n:  # "mass" in "mass_0"
-                next_index = int(n.split("_")[-1]) + 1
+            # print(get_set(Butler.property_object_property_name, meas_dict), "in", n, ":", get_set(Butler.property_object_property_name, meas_dict) in n)
+            if get_set(Butler.property_object_property_name, meas_dict) in n:  # "mass" in "mass_0"
+                next_index = max(int(n.split("_")[-1]) + 1, next_index)
 
-        new_prop_dir = j(parent_dir, meas_dict[Butler.property_object_property_name] + "_" + str(next_index))
+        new_prop_dir = j(parent_dir, get_set(Butler.property_object_property_name, meas_dict) + "_" + str(next_index))
         imgs_dir = j(new_prop_dir, prop_struct["imgs"])
         figs_dir = j(new_prop_dir, prop_struct["figs"])
         data_dir = j(new_prop_dir, prop_struct["data"]["name"])
@@ -327,17 +351,17 @@ class Butler:
         new_files = [log_file, meas_file]
         for d in new_dirs:
             new_dir_name = d
-            new_index = 0
-            while os.path.isdir(new_dir_name):  # idk why but just in case the directory exists here
-                new_split = new_dir_name.split("_")
-                try:
-                    new_index = int(new_split[-1]) + 1
-                except:
-                    new_index = 0
-                new_name = ""
-                for _ in range(len(new_split) - 1):
-                    new_name += new_split[_] + "_"
-                new_dir_name = new_name + str(new_index)
+            # new_index = 0
+            # while os.path.isdir(new_dir_name):  # idk why but just in case the directory exists here
+            #     new_split = new_dir_name.split("_")
+            #     try:
+            #         new_index = int(new_split[-1]) + 1
+            #     except:
+            #         new_index = 0
+            #     new_name = ""
+            #     for _ in range(len(new_split) - 1):
+            #         new_name += new_split[_] + "_"
+            #     new_dir_name = new_name + str(new_index)
             os.mkdir(new_dir_name)
         for f in new_files:
             with open(f, "w") as f:
