@@ -5,4 +5,5 @@ experiment_*
 setups/*
 tests/
 *.pyc
+*.json
 

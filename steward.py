@@ -66,7 +66,7 @@ def make_one_entry(parameters, entry_value, measurement_object_json):
         property_name = meas_property_name
     elif "property_name" in parameters:
         property_name = parameters["property_name"]
-    entry_value["property_name"] = property_name
+    entry_value["name"] = property_name
 
 
 # tsumari: get experiment folder, convert it to the measurement.json format then upload it
@@ -80,7 +80,7 @@ def experiment_to_json(experiment_directory):
             valid_dirs.append(_)
     setup_file = os.path.join(experiment_directory, "setup.json")
     with open(setup_file, "r") as fp:
-        setup_json = json.load(fp)  # final, 1 for N objects
+        setup_dict = json.load(fp)  # final, 1 for N objects
     valid_prop_dirs = list()
     for prop_dir in valid_dirs:
         abs_prop_dir = join(experiment_directory, prop_dir)
@@ -89,48 +89,54 @@ def experiment_to_json(experiment_directory):
             matches = re.findall(pattern=_property_ignored_names, string=_)
             if len(matches) == 0:
                 valid_prop_dirs.append(join(abs_prop_dir, _))
-        print(valid_prop_dirs)
+        # print(valid_prop_dirs)
 
         # prop_name = prop_dir.split("_")[0]
         # print(prop_name)
-    object_context_json = None
+    object_context_dict = None
+    print("valid_prop_dirs", valid_prop_dirs)
     for data_dir in valid_prop_dirs:
         certain_files = {"object_context": "object_context.json", "measurement": "measurement.json"}
         object_context_file = join(data_dir, certain_files["object_context"])
         if os.path.exists(object_context_file):
             with open(object_context_file, "r") as fp:
-                object_context_json = json.load(fp)  # max N for N objects
+                object_context_dict = json.load(fp)  # max N for N objects
             # print(data_dir, ":", object_context_json)
         # SensorOutputs, PropertyEntry, Grasp
         measurement_object_file = join(data_dir, certain_files["measurement"])
         with open(measurement_object_file, "r") as fp:
-            measurement_object_json = json.load(fp)
+            measurement_object_dict = json.load(fp)
+        print("measurement_object_dict", measurement_object_dict)
         data_jsons = os.listdir(data_dir)
         data_jsons = [_ for _ in data_jsons if _ not in certain_files.values()]
 
         sensor_outputs = dict()
-        meas_values = measurement_object_json["values"]
+        meas_values = measurement_object_dict["values"]
         if meas_values is not None:  # if `meas_object.values` is filled
             data_dicts_to_sensor_outputs(sensor_outputs, meas_values)
         for data_json in data_jsons:  # if `data_variables` is filled
             with open(join(data_dir, data_json), "r") as fp:
                 data_dict = json.load(fp)
                 data_dicts_to_sensor_outputs(sensor_outputs, data_dict)
-        print("setup_json:", setup_json)
-        print("object_context:", object_context_json)
+        print("setup_json:", setup_dict)
+        print("object_context:", object_context_dict)
         print("sensor_outputs:", sensor_outputs)
-        print("_measurement_object:", measurement_object_json)
-        entry_object = dict()
-        entry_object["values"] = list()
-        entry_values = entry_object["values"]
+        # print("_measurement_object:", measurement_object_dict)
+        entry_dict = dict()
+        entry_dict["values"] = list()
+        entry_values = entry_dict["values"]
+        measurement_type = measurement_object_dict["measurement_type"]  # ["continuous", "categorical"]
+        parameters = measurement_object_dict["parameters"]  # {"cat1": 0.1, "cat2": 0.5, "cat3": 0.4}
+        entry_dict["type"] = measurement_object_dict["measurement_type"]
+        entry_dict["name"] = measurement_object_dict["property_name"]
+        entry_dict["repository"] = measurement_object_dict["repository"]
         # care about prop.units, params[std, mean], prop_name
-        if measurement_object_json["measurement_type"] == "continuous":
+        if measurement_type == "continuous":
             # if measurement 1D {std, mean}, then just a single continuous distribution
-            parameters = measurement_object_json["parameters"]
             if len(set(parameters) & {"std", "mean"}) == 2:  # 1D
                 entry_value = dict()
                 entry_values.append(entry_value)
-                make_one_entry(parameters, entry_value, measurement_object_json)
+                make_one_entry(parameters, entry_value, measurement_object_dict)  # inplace change entry_value dict
             else:
                 for prop_k in parameters:
                     prop_v = parameters[prop_k]
@@ -138,11 +144,39 @@ def experiment_to_json(experiment_directory):
                         continue
                     entry_value = dict()
                     entry_values.append(entry_value)
-                    make_one_entry(parameters, entry_value, measurement_object_json)
-        print("entry_values", entry_values)
+                    make_one_entry(parameters, entry_value, measurement_object_dict)
+        elif measurement_type == "categorical":
+            cat_sum = sum(parameters.values())
+            if abs(cat_sum - 1.0) > 0.01:
+                raise ValueError("Sum of categories' probabilities must be equal to one! Current sum: "+str(cat_sum))
+            # normalize as closely to one as possible
+            parameters = {cat: parameters[cat] / cat_sum for cat in parameters}
+            for cat in parameters:
+                prop_el = {"name": cat, "probability": parameters[cat]}
+                entry_values.append(prop_el)
+            if entry_dict["name"] in {"stiffness", "elasticity", "size"}:
+                raise KeyError(entry_dict["name"]+" is not a categorical property")
+
+        grasp = measurement_object_dict.get("grasp")
+        if grasp is not None:
+            assert len({"rotation", "position", "grasped"} & set(grasp.keys())) == 3, \
+                "`grasp` dictionary must contain keys \"position\": xyz, \"rotation\": xyz, \"grasped\": bool"
+        print("grasp", grasp)
+
+        print("entry_object", entry_dict)
+
+        request_dict = dict()
+        request_dict["object_instance"] = object_context_dict
+        request_dict["setup"] = setup_dict
+        request_dict["sensor_outputs"] = sensor_outputs
+        request_dict["grasp"] = grasp
+        request_dict["entry"] = entry_dict
+        # print("\nrequest_dict: ", request_dict, "\n")
+        with open("testy_json.json", "w") as fp:
+            json.dump(fp=fp, obj=request_dict, indent=True)
 
 
 if __name__ == "__main__":
-    experiment_to_json("experiment_1")
+    experiment_to_json("experiment_0")
 
 

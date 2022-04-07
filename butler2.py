@@ -203,8 +203,11 @@ class Butler:
 
                 if type(output_variable) == dict:
                     new_measurement = output_variable
-                elif isinstance(output_variable, PropertyMeasurement):
+                elif isinstance(output_variable, object):
+                    # elif type(output_variable) == instance:
+                    # print("type(output_variable):", type(output_variable).__dict__)
                     new_measurement = output_variable.__dict__
+                    # print("outout var is a CLASSSS!!!!")
                 else:
                     raise TypeError(
                         "for return value or specified output_variable is not of type [dict, PropertyMeasurement]"
@@ -404,13 +407,16 @@ class PropertyMeasurement:
     "density", "continuous", {"mean": 100, "sigma": 10}, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], meas_ID=1
     """
 
-    def __init__(self, property_name=None, measurement_type=None, parameters=None, units=None, grasp=None, values=None, other=None, other_file=None, **kwargs):
+    def __init__(self, property_name=None, measurement_type=None, parameters=None, units=None,
+                 grasp=None, values=None, repository=None,
+                 other=None, other_file=None, **kwargs):
         self.property_name = property_name  # eg mass, elasticity, vision, sound
         self.measurement_type = measurement_type  # continuous, discrete
         self.parameters = parameters  #
         self.units = units
         self.grasp = grasp
         self.values = values
+        self.repository = repository
         self.other = other
         self.other_file = other_file
         for k in kwargs:
@@ -460,25 +466,25 @@ if __name__ == "__main__":
             self.test_value2 = {"values": [9, 8, 7, 6, 5, 6, 7, 8, 9], "source": "gripper_name"}
             self.test_value3 = {"values": {"current": [1, 2, 3, 4, 5, 6, 7, 8, 9]}, "source": "arm_name"}
 
-        @butler(keywords="[INFO]", delimiter="\n", data_variables=("self.test_value2", "self.test_value3"), create_new_exp_on_run=True)
-        def multiply(self, a, b):
-            _meas = PropertyMeasurement("elasticity", "continuous", {"mean": 500000, "std": 100000},
-                                        grasp={"position": [0.1, 0.2, 0.3], "rotation": [0.5, 0.9, 0.7]},
-                                        values=self.test_value1, units="Pa", meas_ID=6)
-            print("this should only be in the top log")
-            print("[INFO] no thanks")
-
-            stringlol = "\033[1;31m Sample Text \033[0m"
-            print(stringlol)
-            print("result: ", a * b)
-            # print(dir())
-            Butler.add_object_context({"maker": "coca_cola"}, override_recommendation=False)
-            return _meas, a * b
+        # @butler(keywords="[INFO]", delimiter="\n", data_variables=("self.test_value2", "self.test_value3"), create_new_exp_on_run=True)
+        # def multiply(self, a, b):
+        #     _meas = PropertyMeasurement("elasticity", "continuous", {"mean": 500000, "std": 100000},
+        #                                 grasp={"position": [0.1, 0.2, 0.3], "rotation": [0.5, 0.9, 0.7], "grasped": True},
+        #                                 values=self.test_value1, units="Pa", repository="http://www.github.com", meas_ID=6)
+        #     print("this should only be in the top log")
+        #     print("[INFO] no thanks")
+        #
+        #     stringlol = "\033[1;31m Sample Text \033[0m"
+        #     print(stringlol)
+        #     print("result: ", a * b)
+        #     # print(dir())
+        #     Butler.add_object_context({"maker": "coca_cola"}, override_recommendation=False)
+        #     return _meas, a * b
 
         @butler(keywords="[INFO]", delimiter="\n", keep_keywords=False, data_variables=("self.test_value2",),
                 create_new_exp_on_run=True)
         def divide(self, a, b):
-            _meas = PropertyMeasurement(property_name="stiffness",
+            _meas = PropertyMeasurement(property_name="object_category",
                                         measurement_type="categorical",
                                         parameters={"cat1": 0.5, "cat2": 0.3, "cat3": 0.2},
                                         meas_ID=6)
@@ -489,6 +495,7 @@ if __name__ == "__main__":
             print(stringlol)
             print("result: ", a / b)
             # print(dir())
+            Butler.add_object_context({"common_name": "yellow_sponge"}, override_recommendation=False)
             return _meas, a / b
 
 
@@ -502,6 +509,6 @@ if __name__ == "__main__":
     # print(os.listdir(this_dir()))
     all_vars = dir()
     bc = TestClass()
-    c = bc.multiply(39, 20)
+    # c = bc.multiply(39, 20)
     d = bc.divide(40, 20)
     print(eval("__file__"))
