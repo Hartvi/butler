@@ -243,21 +243,25 @@ class Butler:
                     for data_file in data_files:
                         shutil.copy2(data_file, property_paths["data"])
 
-                tmp_img_files = Butler.get_tmp_files("imgs")
-                if len(tmp_img_files) > 0:
-                    for tmp_file in tmp_img_files:
-                        shutil.copy2(tmp_file, property_paths["imgs"])
+                # tmp_img_files = Butler.get_tmp_files("imgs")
+                for tmp_file in Butler.tmp_img_files:
+                    # print("BUTLER FILE: ", tmp_file, " TO ", property_paths["imgs"])
+                    shutil.copy2(tmp_file, property_paths["imgs"])
 
-                tmp_fig_files = Butler.get_tmp_files("figs")
-                if len(tmp_fig_files) > 0:
-                    for tmp_file in tmp_fig_files:
-                        shutil.copy2(tmp_file, property_paths["figs"])
+                # tmp_fig_files = Butler.get_tmp_files("figs")
+                for tmp_file in Butler.tmp_fig_files:
+                    # print("BUTLER FILE: ", tmp_file, " TO ", property_paths["figs"])
+                    shutil.copy2(tmp_file, property_paths["figs"])
 
-                tmp_data_files = Butler.get_tmp_files("data")
-                if len(tmp_data_files) > 0:
-                    for tmp_file in tmp_data_files:
-                        shutil.copy2(tmp_file, property_paths["data"])
+                # tmp_data_files = Butler.get_tmp_files("data")
+                for tmp_file in Butler.tmp_data_files:
+                    # print("BUTLER FILE: ", tmp_file, " TO ", property_paths["data"])
+                    shutil.copy2(tmp_file, property_paths["data"])
 
+                # for some reason having this in another method doesnt register
+                Butler.tmp_data_files = ()
+                Butler.tmp_fig_files = ()
+                Butler.tmp_img_files = ()
                 # the prints containing `keywords` go into property_paths["log"]
                 property_log = property_paths["log"]
 
@@ -437,7 +441,7 @@ class Butler:
 
     @staticmethod
     def _pop_object_context():
-        print(Butler.context)
+        # print(Butler.context)
         if len(Butler.context) != 0:
             ret = Butler.context.pop(0)
             print(Butler.context)
@@ -467,21 +471,21 @@ class Butler:
             Butler.tmp_fig_files = file_paths
         if tmp_file_folder == "imgs":
             Butler.tmp_img_files = file_paths
+        # print("BUTLER: ADDED TMP FILES TO: ", tmp_file_folder, " FILES: ", file_paths)
 
     @staticmethod
     def get_tmp_files(figs_imgs_data):
+        # print("BUTLER: GETTING TMP FILES")
         if figs_imgs_data == "figs":
             ret = Butler.tmp_fig_files
-            Butler.tmp_fig_files = ()
             return ret
         if figs_imgs_data == "figs":
             ret = Butler.tmp_fig_files
-            Butler.tmp_fig_files = ()
             return ret
         if figs_imgs_data == "data":
             ret = Butler.tmp_data_files
-            Butler.tmp_data_files = ()
             return ret
+        return ()
 
 
 butler = Butler()  # to make `from butler2 import butler` possible and to have its fields recognized by IDEs
