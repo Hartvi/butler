@@ -7,8 +7,8 @@ from datetime import datetime
 import json
 import numpy as np
 import re
-import atexit
 from copy import deepcopy
+import shutil
 
 __all__ = ["dump_numpy_proof", "numpy_to_native", "PropertyMeasurement", "butler"]
 _real_std_out = None
@@ -147,6 +147,9 @@ class Butler:
     context = list()
     counter = 0
     property_object_property_name = {"prop", "name", "property_name", "property", "meas_prop", "meas_name", "measured_property", "measurement_property", "measured_name", "measurement_name"}
+    tmp_img_files = ()
+    tmp_fig_files = ()
+    tmp_data_files = ()
 
     @staticmethod
     def __call__(keywords=(),
@@ -160,6 +163,7 @@ class Butler:
                  data_variables=(),
                  img_files=(),
                  fig_files=(),
+                 data_files=(),
                  ignore_colours=True,
                  create_new_exp_on_run=False):
         assert type(output_variable_name) == str, "measured object variable name must be string! & Only one per function"
@@ -228,13 +232,32 @@ class Butler:
                 # exit(1)
                 property_paths = Butler._create_property_entry(Butler.session_paths["exp"], new_measurement)
                 if len(fig_files) > 0:
-                    import shutil
                     for fig_file in fig_files:
                         shutil.copy2(fig_file, property_paths["figs"])
+
                 if len(img_files) > 0:
-                    import shutil
                     for img_file in img_files:
                         shutil.copy2(img_file, property_paths["imgs"])
+
+                if len(data_files) > 0:
+                    for data_file in data_files:
+                        shutil.copy2(data_file, property_paths["data"])
+
+                tmp_img_files = Butler.get_tmp_files("imgs")
+                if len(tmp_img_files) > 0:
+                    for tmp_file in tmp_img_files:
+                        shutil.copy2(tmp_file, property_paths["imgs"])
+
+                tmp_fig_files = Butler.get_tmp_files("figs")
+                if len(tmp_fig_files) > 0:
+                    for tmp_file in tmp_fig_files:
+                        shutil.copy2(tmp_file, property_paths["figs"])
+
+                tmp_data_files = Butler.get_tmp_files("data")
+                if len(tmp_data_files) > 0:
+                    for tmp_file in tmp_data_files:
+                        shutil.copy2(tmp_file, property_paths["data"])
+
                 # the prints containing `keywords` go into property_paths["log"]
                 property_log = property_paths["log"]
 
@@ -421,6 +444,44 @@ class Butler:
             return ret
         else:
             return None
+
+    @staticmethod
+    def add_tmp_files(file_paths, tmp_file_folder):
+        """Adds files to be copied to the folder: property/[data, imgs, figs] when the function decorated by `@butler` is called.
+
+        Parameters
+        ----------
+        file_paths : list[str]
+            The files to be copied to tmp_file_folder
+        tmp_file_folder : str
+            One of ["data", "imgs", "figs"]. The `experiment_i/property_j` subfolder into which the `file_paths` files are to be copied.
+
+        """
+        assert tmp_file_folder in {"data", "figs", "imgs"}, "folder has to be one of {\"data\", \"figs\", \"imgs\"}"
+        valid_file_paths = file_paths
+        if type(valid_file_paths) not in {list, tuple}:
+            valid_file_paths = (valid_file_paths, )
+        if tmp_file_folder == "data":
+            Butler.tmp_data_files = file_paths
+        if tmp_file_folder == "figs":
+            Butler.tmp_fig_files = file_paths
+        if tmp_file_folder == "imgs":
+            Butler.tmp_img_files = file_paths
+
+    @staticmethod
+    def get_tmp_files(figs_imgs_data):
+        if figs_imgs_data == "figs":
+            ret = Butler.tmp_fig_files
+            Butler.tmp_fig_files = ()
+            return ret
+        if figs_imgs_data == "figs":
+            ret = Butler.tmp_fig_files
+            Butler.tmp_fig_files = ()
+            return ret
+        if figs_imgs_data == "data":
+            ret = Butler.tmp_data_files
+            Butler.tmp_data_files = ()
+            return ret
 
 
 butler = Butler()  # to make `from butler2 import butler` possible and to have its fields recognized by IDEs
