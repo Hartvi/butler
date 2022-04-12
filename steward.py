@@ -107,8 +107,8 @@ def experiment_to_json(experiment_directory):
         with open(measurement_object_file, "r") as fp:
             measurement_object_dict = json.load(fp)
         print("measurement_object_dict", measurement_object_dict)
-        data_jsons = os.listdir(data_dir)
-        data_jsons = [_ for _ in data_jsons if _ not in certain_files.values()]
+        data_dir_ls = os.listdir(data_dir)
+        data_jsons = [_ for _ in data_dir_ls if _ not in certain_files.values()]
 
         sensor_outputs = dict()
         meas_values = measurement_object_dict["values"]
@@ -166,13 +166,15 @@ def experiment_to_json(experiment_directory):
         print("entry_object", entry_dict)
 
         request_dict = dict()
-        request_dict["object_instance"] = object_context_dict
-        request_dict["setup"] = setup_dict
-        request_dict["sensor_outputs"] = sensor_outputs
-        request_dict["grasp"] = grasp
+        request_dict["measurement"] = dict()
+        measurement_dict = request_dict["measurement"]
+        measurement_dict["object_instance"] = object_context_dict
+        measurement_dict["setup"] = setup_dict
+        measurement_dict["sensor_outputs"] = sensor_outputs
+        measurement_dict["grasp"] = grasp
         request_dict["entry"] = entry_dict
         # print("\nrequest_dict: ", request_dict, "\n")
-        with open("testy_json.json", "w") as fp:
+        with open("tests/testy_json.json", "w") as fp:
             json.dump(fp=fp, obj=request_dict, indent=True)
 
 

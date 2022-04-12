@@ -3,6 +3,9 @@ This is a utility repository for organized data storage without the need to modi
 
 The crux of this project is the `@butler` decorator. Simply decorate a function and it saves variables and print outputs as you like.
 
+### 04/12
+- add `norach.py` - this will upload the processed measurements to the django rest endpoint
+
 ### 04/04-05
 - make steward
   - done: continuous property class processing

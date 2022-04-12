@@ -15,11 +15,28 @@ _real_std_out = None
 
 
 def dump_numpy_proof(something, fp):
+    """A np.ndarray immune json.dump(sth, fp)
+
+    """
     something = numpy_to_native(something)
     json.dump(something, fp)
 
 
 def numpy_to_native(something, inplace=False):
+    """Recursively converts np.ndarrays to lists inside all combinations of nested lists, tuples, dicts, sets
+
+    Parameters
+    ----------
+    something : list or tuple or dict or set or np.ndarray
+        It has too many np.ndarrays.
+    inplace : bool
+        Whether to overwrite the something in-place
+
+    Returns
+    -------
+    list or tuple or dict or set
+        A denumpyified something
+    """
     if inplace:
         new_something = something
     else:
@@ -67,23 +84,46 @@ class CustomStringIO(StringIO):
 
 
 def get_time_string():
+    """Returns the timedate formatted in %Y_%m_%d_%H_%M_%S
+
+    Return
+    ------
+    str
+        Formatted timedate in descending order of significance
+    """
     time_string = datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
     return time_string
 
 
 def this_dir():
+    """Returns the directory of the current python file
+
+    Returns
+    -------
+    str
+        Current parent dir of this file
+    """
     real_path = os.path.realpath(__file__)
     dir_path = os.path.dirname(real_path)
     return dir_path
 
 
 def cache_print(f, *args, **kwargs):
-    """
-    Save the return value of f & prints from this function in a tuple:: (return values, prints)
-    :param f: function
-    :param args: args
-    :param kwargs: kwargs
-    :return: (f(args, kwargs), stdout of the function as a string)
+    """Save the return value of function `f` & its print outputs
+
+    Parameters
+    ----------
+    f : function
+        Function whose prints you want saved.
+    args : any
+        Classical *args.
+    kwargs : dict
+        Classical **kwargs.
+
+    Returns
+    -------
+    tuple
+        tuple of (function_return, stdout)
     """
     global _real_std_out
     _real_std_out = sys.stdout
@@ -146,6 +186,7 @@ class Butler:
     property_setup = dict()
     context = list()
     counter = 0
+    # TODO: regex dict getting \/
     property_object_property_name = {"prop", "name", "property_name", "property", "meas_prop", "meas_name", "measured_property", "measurement_property", "measured_name", "measurement_name"}
     tmp_img_files = ()
     tmp_fig_files = ()
@@ -155,17 +196,52 @@ class Butler:
     def __call__(keywords=(),
                  keep_keywords=True,
                  setup_file="setup.json",
-                 delimiter="\n",
-                 add_new_line=True,
                  read_return=True,
                  session_parent_dir=os.path.dirname(__file__),
                  output_variable_name="",
-                 data_variables=(),
+                 data_variables=dict,
                  img_files=(),
                  fig_files=(),
                  data_files=(),
                  ignore_colours=True,
                  create_new_exp_on_run=False):
+        """Butler collects and organizes experiment data into folders while the experiment is running.
+
+        Parameters
+        ----------
+        keywords : list or tuple
+            List of keywords whose lines will be extracted when printed
+        keep_keywords : bool
+            Whether to also save the keywords with the rest of the print line
+        setup_file : str
+            Path to the json containing the setup mappings. E.g. {"gripper": "robotiq 2f85", ...}
+        read_return : bool
+            Whether to take the return value (or first element in return tuple) as the measurement output. When False, see `outpu_bariable_name` parameter.
+        session_parent_dir : str
+            Directory where to save the experiments; default is the butler.py directory
+        output_variable_name : str
+            The string name of the variable that contains the data that is otherwise returned by the decorated function. Has to be visible in the scope where the decorated function is called. E.g. `self.data_var` or `just_data_var`.
+        data_variables : dict[str, list or tuple or np.ndarray or str]
+            Sensor output variables. Format: {"source_sensor_name": {"quantity (e.g. postiion)": [list, of, values], ...}, ...}
+        img_files : list[str] or tuple[str]
+            List of file paths that will be copied to `experiment_i/property_j/imgs` every time the function is run.
+        fig_files : list[str] or tuple[str]
+            List of file paths that will be copied to `experiment_i/property_j/figs` every time the function is run.
+        data_files : list[str] or tuple[str]
+            List of file paths that will be copied to `experiment_i/property_j/data` every time the function is run.
+        ignore_colours : bool
+            Whether to ignore the special colour characters; in regex: "\033\[\d+(;\d+)?m"
+        create_new_exp_on_run : bool
+            Whether to create a new experiment_i folder on every run of the function.
+
+
+        Additional parameters
+        ---------------------
+        Butler.add_object_context(context) - adds extra info about the measurement\n
+        Butler.add_tmp_files(files, destination) - adds `files` to be copied to `destination` folder
+
+
+        """
         assert type(output_variable_name) == str, "measured object variable name must be string! & Only one per function"
 
         assert type(keywords) == str or type(keywords) == list or type(keywords) == tuple, \
@@ -265,7 +341,6 @@ class Butler:
                 # the prints containing `keywords` go into property_paths["log"]
                 property_log = property_paths["log"]
 
-                Butler._update_internal_setup(Butler.setup)
 
                 """
                 data variables should know where they come from:
@@ -300,15 +375,15 @@ class Butler:
                 tmp_keywords = keywords
                 if type(keywords) == str:
                     tmp_keywords = (keywords,)
-                print_split = processed_std_out.split(delimiter)
+                print_split = processed_std_out.split("\n")
                 butlered_lines = ""
                 for kwd in tmp_keywords:
                     for prnt in print_split:
                         if kwd in prnt:
                             if keep_keywords:
-                                butlered_lines += prnt + ("\n" if add_new_line else "")
+                                butlered_lines += prnt + "\n"
                             else:
-                                butlered_lines += prnt.replace(kwd, "") + ("\n" if add_new_line else "")
+                                butlered_lines += prnt.replace(kwd, "") + "\n"
 
                 # butlered_lines goes to experiment_{}/meas_prop/log.txt
                 with open(property_log, "w") as fp:
@@ -325,7 +400,10 @@ class Butler:
         if os.path.isfile(str_in):
             return 0
         if "experiment_" in str_in:
-            return int(split_str[-1]) + 1
+            try:
+                return int(split_str[-1]) + 1
+            except:
+                return 0
         else:
             return 0
 
@@ -357,7 +435,6 @@ class Butler:
 
     @staticmethod
     def _create_property_entry(parent_dir, meas_dict):
-        # print("BULTER: CREATING PROPERTY ENTRYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY")
         j = os.path.join
         prop_struct = PropertyStructure["structure"]
 
@@ -405,24 +482,34 @@ class Butler:
         ret["meas"] = meas_file
         return ret
 
-    @staticmethod
-    def _update_internal_setup(setup_dict):  # atm only the last used setup for the given quantity
-        setups_path = os.path.join(this_dir(), "setups")
-        if not os.path.isdir(setups_path):
-            Butler.setups_folder = setups_path
-            os.mkdir(setups_path)
-        setups_path = os.path.join(setups_path, "setups.json")
-        if not os.path.isfile(setups_path):
-            with open(setups_path, "w") as fp:
-                fp.write("{}")
-        with open(setups_path, "r") as fp:
-            current_exp_setup = json.load(fp)
-        with open(setups_path, "w") as fp:
-            current_exp_setup[get_time_string()] = setup_dict
-            dump_numpy_proof(current_exp_setup, fp)
+    # @staticmethod
+    # def _update_internal_setup(setup_dict):  # atm only the last used setup for the given quantity
+    #     setups_path = os.path.join(this_dir(), "setups")
+    #     if not os.path.isdir(setups_path):
+    #         Butler.setups_folder = setups_path
+    #         os.mkdir(setups_path)
+    #     setups_path = os.path.join(setups_path, "setups.json")
+    #     if not os.path.isfile(setups_path):
+    #         with open(setups_path, "w") as fp:
+    #             fp.write("{}")
+    #     with open(setups_path, "r") as fp:
+    #         current_exp_setup = json.load(fp)
+    #     with open(setups_path, "w") as fp:
+    #         current_exp_setup[get_time_string()] = setup_dict
+    #         dump_numpy_proof(current_exp_setup, fp)
 
     @staticmethod
     def add_object_context(context, override_recommendation=False):
+        """Adds the object's "maker", "common_name", "dataset", "dataset_id" for one run of the function. Call `Butler.add_object_context(context)` inside the decorated funtion.
+
+        Parameters
+        ----------
+        context : dict[str, str]
+            The object context. Format: {"maker": "ikea", "common_name": "hard_yellow_sponge", "dataset": "ycb"}. If "dataset_id" is present, "dataset" must also be present.
+        override_recommendation : bool
+            Whether to remove the constraint that the context keys have to be one of ["maker", "common_name", "dataset", "dataset_id".]
+
+        """
         assert type(context) == dict, "object context must be in the format {key: value for (key, value) in key_values}"
         context_values = context.values()
         context_keys = context.keys()
@@ -451,7 +538,7 @@ class Butler:
 
     @staticmethod
     def add_tmp_files(file_paths, tmp_file_folder):
-        """Adds files to be copied to the folder: property/[data, imgs, figs] when the function decorated by `@butler` is called.
+        """Adds files to be copied to the folder: property_j/[data, imgs, figs] when the function decorated by `@butler` is called.
 
         Parameters
         ----------
@@ -489,6 +576,40 @@ class Butler:
 
 
 butler = Butler()  # to make `from butler2 import butler` possible and to have its fields recognized by IDEs
+"""Butler collects and organizes experiment data into folders while the experiment is running.
+
+Parameters
+----------
+keywords : list or tuple
+    List of keywords whose lines will be extracted when printed
+keep_keywords : bool
+    Whether to also save the keywords with the rest of the print line
+setup_file : str
+    Path to the json containing the setup mappings. E.g. {"gripper": "robotiq 2f85", ...}
+read_return : bool
+    Whether to take the return value (or first element in return tuple) as the measurement output. When False, see `outpu_bariable_name` parameter.
+session_parent_dir : str
+    Directory where to save the experiments; default is the butler.py directory
+output_variable_name : str
+    The string name of the variable that contains the data that is otherwise returned by the decorated function. Has to be visible in the scope where the decorated function is called. E.g. `self.data_var` or `just_data_var`.
+data_variables : dict[str, list or tuple or np.ndarray or str]
+    Sensor output variables. Format: {"source_sensor_name": {"quantity (e.g. postiion)": [list, of, values], ...}, ...}
+img_files : list[str] or tuple[str]
+    List of file paths that will be copied to `experiment_i/property_j/imgs` every time the function is run.
+fig_files : list[str] or tuple[str]
+    List of file paths that will be copied to `experiment_i/property_j/figs` every time the function is run.
+data_files : list[str] or tuple[str]
+    List of file paths that will be copied to `experiment_i/property_j/datas` every time the function is run.
+ignore_colours : bool
+    Whether to ignore the special colour characters; in regex: "\033\[\d+(;\d+)?m"
+create_new_exp_on_run : bool
+    Whether to create a new experiment_i folder on every run of the function.
+
+Additional parameters
+---------------------
+
+
+"""
 
 
 class PropertyMeasurement:
@@ -555,7 +676,7 @@ if __name__ == "__main__":
             self.test_value2 = {"values": [9, 8, 7, 6, 5, 6, 7, 8, 9], "source": "gripper_name"}
             self.test_value3 = {"values": {"current": [1, 2, 3, 4, 5, 6, 7, 8, 9]}, "source": "arm_name"}
 
-        # @butler(keywords="[INFO]", delimiter="\n", data_variables=("self.test_value2", "self.test_value3"), create_new_exp_on_run=True)
+        # @butler(keywords="[INFO]", data_variables=("self.test_value2", "self.test_value3"), create_new_exp_on_run=True)
         # def multiply(self, a, b):
         #     _meas = PropertyMeasurement("elasticity", "continuous", {"mean": 500000, "std": 100000},
         #                                 grasp={"position": [0.1, 0.2, 0.3], "rotation": [0.5, 0.9, 0.7], "grasped": True},
@@ -570,7 +691,7 @@ if __name__ == "__main__":
         #     Butler.add_object_context({"maker": "coca_cola"}, override_recommendation=False)
         #     return _meas, a * b
 
-        @butler(keywords="[INFO]", delimiter="\n", keep_keywords=False, data_variables=("self.test_value2",),
+        @butler(keywords="[INFO]", keep_keywords=False, data_variables=("self.test_value2",),
                 create_new_exp_on_run=True)
         def divide(self, a, b):
             _meas = PropertyMeasurement(property_name="object_category",
@@ -588,7 +709,6 @@ if __name__ == "__main__":
             return _meas, a / b
 
 
-    # print(this_dir())
     import shutil
     for _ in os.listdir(this_dir()):
         if os.path.isdir(_):
