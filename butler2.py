@@ -191,6 +191,7 @@ class Butler:
     tmp_img_files = ()
     tmp_fig_files = ()
     tmp_data_files = ()
+    png_path = None
 
     @staticmethod
     def __call__(keywords=(),
@@ -199,7 +200,7 @@ class Butler:
                  read_return=True,
                  session_parent_dir=os.path.dirname(__file__),
                  output_variable_name="",
-                 data_variables=dict,
+                 data_variables=(),
                  img_files=(),
                  fig_files=(),
                  data_files=(),
@@ -209,7 +210,7 @@ class Butler:
 
         Parameters
         ----------
-        keywords : list or tuple
+        keywords : str list or tuple
             List of keywords whose lines will be extracted when printed
         keep_keywords : bool
             Whether to also save the keywords with the rest of the print line
@@ -221,7 +222,7 @@ class Butler:
             Directory where to save the experiments; default is the butler.py directory
         output_variable_name : str
             The string name of the variable that contains the data that is otherwise returned by the decorated function. Has to be visible in the scope where the decorated function is called. E.g. `self.data_var` or `just_data_var`.
-        data_variables : dict[str, list or tuple or np.ndarray or str]
+        data_variables : list or tuple or str or dict[str, list or tuple or np.ndarray or str]
             Sensor output variables. Format: {"source_sensor_name": {"quantity (e.g. postiion)": [list, of, values], ...}, ...}
         img_files : list[str] or tuple[str]
             List of file paths that will be copied to `experiment_i/property_j/imgs` every time the function is run.
@@ -334,6 +335,10 @@ class Butler:
                     # print("BUTLER FILE: ", tmp_file, " TO ", property_paths["data"])
                     shutil.copy2(tmp_file, property_paths["data"])
 
+                if Butler.png_path is not None:
+                    shutil.copy2(Butler.png_path, os.path.join(property_paths["data"], "img.png"))
+                Butler.png_path = None
+
                 # for some reason having this in another method doesnt register
                 Butler.tmp_data_files = ()
                 Butler.tmp_fig_files = ()
@@ -361,10 +366,10 @@ class Butler:
                         data_variable = args[0].__dict__[new_v_name]  # for class functions `func(self, arg1)`
                     else:
                         data_variable = eval(new_v_name)
-                    assert "values" in data_variable, \
-                        "\"values\" key not in variable " + str(varname) + ": " + str(data_variable)
-                    assert "source" in data_variable, \
-                        "\"source\" key not in variable " + str(varname) + ": " + str(data_variable)
+                    # assert "values" in data_variable, \
+                    #     "\"values\" key not in variable " + str(varname) + ": " + str(data_variable)
+                    # assert "source" in data_variable, \
+                    #     "\"source\" key not in variable " + str(varname) + ": " + str(data_variable)
                     with open(os.path.join(property_paths["data"], new_v_name + ".json"), "w") as fp:
                         dump_numpy_proof(data_variable, fp)
                 object_context = Butler._pop_object_context()
@@ -388,6 +393,7 @@ class Butler:
                 # butlered_lines goes to experiment_{}/meas_prop/log.txt
                 with open(property_log, "w") as fp:
                     fp.write(butlered_lines)
+                Butler.counter += 1
                 return res
 
             return wrapper
@@ -542,7 +548,7 @@ class Butler:
 
         Parameters
         ----------
-        file_paths : list[str]
+        file_paths : list[str] or str
             The files to be copied to tmp_file_folder
         tmp_file_folder : str
             One of ["data", "imgs", "figs"]. The `experiment_i/property_j` subfolder into which the `file_paths` files are to be copied.
@@ -553,12 +559,28 @@ class Butler:
         if type(valid_file_paths) not in {list, tuple}:
             valid_file_paths = (valid_file_paths, )
         if tmp_file_folder == "data":
-            Butler.tmp_data_files = file_paths
+            Butler.tmp_data_files = valid_file_paths
         if tmp_file_folder == "figs":
-            Butler.tmp_fig_files = file_paths
+            Butler.tmp_fig_files = valid_file_paths
         if tmp_file_folder == "imgs":
-            Butler.tmp_img_files = file_paths
+            Butler.tmp_img_files = valid_file_paths
         # print("BUTLER: ADDED TMP FILES TO: ", tmp_file_folder, " FILES: ", file_paths)
+
+    @staticmethod
+    def add_measurement_png(png_path):
+        """Adds the png image to be uploaded into the measurement["png"] slot
+
+        Parameters
+        ----------
+        png_path : str
+            Path to the png file as it is on the disk.
+        """
+
+        if not os.path.isfile(png_path):
+            raise IOError("png_path is not a valid path: `"+str(png_path)+"`")
+        if Butler.png_path is not None:
+            raise ValueError("Butler.png_path is being set twice in the same function!!")
+        Butler.png_path = png_path
 
     @staticmethod
     def get_tmp_files(figs_imgs_data):
@@ -672,26 +694,27 @@ if __name__ == "__main__":
 
     class TestClass:
         def __init__(self):
-            self.test_value1 = {"values": {"position": [1, 2, 3, 4, 5, 6, 7, 8, 9]}, "source": "gripper_name"}
-            self.test_value2 = {"values": [9, 8, 7, 6, 5, 6, 7, 8, 9], "source": "gripper_name"}
-            self.test_value3 = {"values": {"current": [1, 2, 3, 4, 5, 6, 7, 8, 9]}, "source": "arm_name"}
+            self.test_value1 = {"gripper_name": {"position": [1, 2, 3, 4, 5, 6, 7, 8, 9]}}
+            self.test_value2 = {"gripper_name": {"values": [9, 8, 7, 6, 5, 6, 7, 8, 9]}}
+            self.test_value3 = {"arm_name": {"current": [1, 2, 3, 4, 5, 6, 7, 8, 9]}}
+            self.test_value4 = {"camera": {"point_cloud": "C:/Users/jhart/PycharmProjects/butler/experiment_0/object_category_0/data/banana.png"}}
 
-        # @butler(keywords="[INFO]", data_variables=("self.test_value2", "self.test_value3"), create_new_exp_on_run=True)
-        # def multiply(self, a, b):
-        #     _meas = PropertyMeasurement("elasticity", "continuous", {"mean": 500000, "std": 100000},
-        #                                 grasp={"position": [0.1, 0.2, 0.3], "rotation": [0.5, 0.9, 0.7], "grasped": True},
-        #                                 values=self.test_value1, units="Pa", repository="http://www.github.com", meas_ID=6)
-        #     print("this should only be in the top log")
-        #     print("[INFO] no thanks")
-        #
-        #     stringlol = "\033[1;31m Sample Text \033[0m"
-        #     print(stringlol)
-        #     print("result: ", a * b)
-        #     # print(dir())
-        #     Butler.add_object_context({"maker": "coca_cola"}, override_recommendation=False)
-        #     return _meas, a * b
+        @butler(keywords="[INFO]", data_variables=("self.test_value2", "self.test_value3", "self.test_value4"), create_new_exp_on_run=True)
+        def multiply(self, a, b):
+            _meas = PropertyMeasurement("elasticity", "continuous", {"mean": 500000, "std": 100000},
+                                        grasp={"position": [0.1, 0.2, 0.3], "rotation": [0.5, 0.9, 0.7], "grasped": True},
+                                        values=self.test_value1, units="Pa", repository="http://www.github.com", meas_ID=6)
+            print("this should only be in the top log")
+            print("[INFO] no thanks")
 
-        @butler(keywords="[INFO]", keep_keywords=False, data_variables=("self.test_value2",),
+            stringlol = "\033[1;31m Sample Text \033[0m"
+            print(stringlol)
+            print("result: ", a * b)
+            # print(dir())
+            Butler.add_object_context({"maker": "coca_cola"}, override_recommendation=False)
+            return _meas, a * b
+
+        @butler(keywords="[INFO]", keep_keywords=False, data_variables=("self.test_value2", "self.test_value4", ),
                 create_new_exp_on_run=True)
         def divide(self, a, b):
             _meas = PropertyMeasurement(property_name="object_category",
@@ -706,6 +729,8 @@ if __name__ == "__main__":
             print("result: ", a / b)
             # print(dir())
             Butler.add_object_context({"common_name": "yellow_sponge"}, override_recommendation=False)
+            Butler.add_tmp_files("C:/Users/jhart/PycharmProjects/butler/tests/banana300.png", "data")
+            Butler.add_measurement_png("C:/Users/jhart/PycharmProjects/butler/tests/banana300.png")
             return _meas, a / b
 
 

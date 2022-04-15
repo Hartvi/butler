@@ -3,6 +3,10 @@ This is a utility repository for organized data storage without the need to modi
 
 The crux of this project is the `@butler` decorator. Simply decorate a function and it saves variables and print outputs as you like.
 
+### 04/15
+- somewhat done file saving:
+  - measurement["png"], object\_instance["other\_file"], measurement["sensor"]["quantity"] 
+
 ### 04/12
 - add `norach.py` - this will upload the processed measurements to the django rest endpoint
 

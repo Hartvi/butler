@@ -7,7 +7,7 @@ from numpy.testing._private.parameterized import param
 
 join = os.path.join
 
-_experiment_ignored_names = "(log.txt)|(timestamp.*)|(setup\.json)"  # |(?!(.*\.json))
+_experiment_ignored_names = "(.*\..*)|(timestamp.*)"  # |(?!(.*\.json))
 _property_ignored_names =   "(log.txt)|(figs)|(imgs)"
 
 
@@ -17,22 +17,22 @@ def merge_two_dicts(x, y):
     return z
 
 
-def data_dicts_to_sensor_outputs(sensor_outputs, data_dict):
+def data_dicts_to_sensor_outputs(sensor_outputs, data_dict, setup_dict):
     # ret = dict()
-    if type(data_dict) != list and type(data_dict) == dict:
-        data_dict = [data_dict, ]
-    elif type(data_dict) != list:
-        raise TypeError("data_dict isn't a Union[dict, list]: " + str(data_dict))
-    for output in data_dict:
-        data_source = output["source"]
-        data_values = output["values"]
-        # {"source": "gripper_name", "values": [1,2,..] => "values": {"values": [..]}}
-        if type(data_values) == list:
-            tmp = data_values
-            output["values"] = dict()
-            output["values"]["values"] = tmp
-
-        data_values = output["values"]
+    # if type(data_dict) != list and type(data_dict) == dict:
+    #     data_dict = [data_dict, ]
+    # elif type(data_dict) != list:
+    #     raise TypeError("data_dict isn't a Union[dict, list]: " + str(data_dict))
+    print(sensor_outputs)
+    print("data_dict", data_dict)
+    for s in data_dict:
+        if s in setup_dict:
+            data_source = setup_dict[s]
+        elif s in setup_dict.values():
+            data_source = s
+        else:
+            raise KeyError("data source/sensor `"+str(s)+"` not specified in experiment_i/setup.json: "+str(setup_dict))
+        data_values = data_dict[s]
         # if data_source in sensor_outputs:
         #     raise KeyError("source \"" + str(data_source) + "\" already in sensor outputs: " + str(sensor_outputs))
         # print(output)
@@ -84,6 +84,7 @@ def experiment_to_json(experiment_directory):
     valid_prop_dirs = list()
     for prop_dir in valid_dirs:
         abs_prop_dir = join(experiment_directory, prop_dir)
+        print(abs_prop_dir)
         sub_prop_dirs = os.listdir(abs_prop_dir)
         for _ in sub_prop_dirs:
             matches = re.findall(pattern=_property_ignored_names, string=_)
@@ -108,16 +109,17 @@ def experiment_to_json(experiment_directory):
             measurement_object_dict = json.load(fp)
         print("measurement_object_dict", measurement_object_dict)
         data_dir_ls = os.listdir(data_dir)
-        data_jsons = [_ for _ in data_dir_ls if _ not in certain_files.values()]
+        data_jsons = [_ for _ in data_dir_ls if (_ not in certain_files.values() and ".json" in _)]
 
         sensor_outputs = dict()
         meas_values = measurement_object_dict["values"]
         if meas_values is not None:  # if `meas_object.values` is filled
-            data_dicts_to_sensor_outputs(sensor_outputs, meas_values)
+            data_dicts_to_sensor_outputs(sensor_outputs, meas_values, setup_dict)
         for data_json in data_jsons:  # if `data_variables` is filled
+            print("data json: ", join(data_dir, data_json))
             with open(join(data_dir, data_json), "r") as fp:
                 data_dict = json.load(fp)
-                data_dicts_to_sensor_outputs(sensor_outputs, data_dict)
+                data_dicts_to_sensor_outputs(sensor_outputs, data_dict, setup_dict)
         print("setup_json:", setup_dict)
         print("object_context:", object_context_dict)
         print("sensor_outputs:", sensor_outputs)
@@ -163,12 +165,22 @@ def experiment_to_json(experiment_directory):
                 "`grasp` dictionary must contain keys \"position\": xyz, \"rotation\": xyz, \"grasped\": bool"
         print("grasp", grasp)
 
+        print("data_dir:", data_dir)
+        potential_img_dir = os.path.join(data_dir, "img.png")
+
+
         print("entry_object", entry_dict)
 
         request_dict = dict()
         request_dict["measurement"] = dict()
         measurement_dict = request_dict["measurement"]
         measurement_dict["object_instance"] = object_context_dict
+
+        if os.path.exists(potential_img_dir):
+            print("img.png:", potential_img_dir)
+            measurement_dict["png"] = potential_img_dir
+        # else:
+        #     print("IMAGE PNG DOESNT EXIST")
         measurement_dict["setup"] = setup_dict
         measurement_dict["sensor_outputs"] = sensor_outputs
         measurement_dict["grasp"] = grasp
