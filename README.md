@@ -3,6 +3,11 @@ This is a utility repository for organized data storage without the need to modi
 
 The crux of this project is the `@butler` decorator. Simply decorate a function and it saves variables and print outputs as you like.
 
+
+### 04/16
+- add `uploader.py`
+  - this tests uploading to the server using the formatted json *and* with files in the request
+
 ### 04/15
 - somewhat done file saving:
   - measurement["png"], object\_instance["other\_file"], measurement["sensor"]["quantity"] 
@@ -14,7 +19,7 @@ The crux of this project is the `@butler` decorator. Simply decorate a function 
 - make steward
   - done: continuous property class processing
   - todo: categorical property class processing
-  - todo: generalize `PropertyMeasurement` class so it also fits andrej's class - in addition to `.parameters` also `.params` and all those shortcuts
+  - todo: generalize `PropertyMeasurement` class so it also fits andrej's class - in addition to `.parameters` also `.params` and all these shortcuts
 
 ### 04/03
 - made butler into a static class

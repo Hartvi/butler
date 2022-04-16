@@ -191,6 +191,9 @@ class Butler:
     tmp_img_files = ()
     tmp_fig_files = ()
     tmp_data_files = ()
+    tmp_img_target_names = ()
+    tmp_fig_target_names = ()
+    tmp_data_target_names = ()
     png_path = None
 
     @staticmethod
@@ -320,20 +323,20 @@ class Butler:
                     for data_file in data_files:
                         shutil.copy2(data_file, property_paths["data"])
 
-                # tmp_img_files = Butler.get_tmp_files("imgs")
-                for tmp_file in Butler.tmp_img_files:
-                    # print("BUTLER FILE: ", tmp_file, " TO ", property_paths["imgs"])
-                    shutil.copy2(tmp_file, property_paths["imgs"])
+                # tmp_img_files = Butler.get_tmp_files("img")
+                for i in range(len(Butler.tmp_img_files)):
+                    # print("BUTLER FILE: ", tmp_file, " TO ", property_paths["img"])
+                    shutil.copy2(Butler.tmp_img_files[i], os.path.join(property_paths["img"], Butler.tmp_img_target_names[i]))
 
-                # tmp_fig_files = Butler.get_tmp_files("figs")
-                for tmp_file in Butler.tmp_fig_files:
-                    # print("BUTLER FILE: ", tmp_file, " TO ", property_paths["figs"])
-                    shutil.copy2(tmp_file, property_paths["figs"])
+                # tmp_fig_files = Butler.get_tmp_files("fig")
+                for i in range(len(Butler.tmp_fig_files)):
+                    # print("BUTLER FILE: ", tmp_file, " TO ", property_paths["fig"])
+                    shutil.copy2(Butler.tmp_fig_files[i], os.path.join(property_paths["fig"], Butler.tmp_fig_target_names[i]))
 
                 # tmp_data_files = Butler.get_tmp_files("data")
-                for tmp_file in Butler.tmp_data_files:
+                for i in range(len(Butler.tmp_data_files)):
                     # print("BUTLER FILE: ", tmp_file, " TO ", property_paths["data"])
-                    shutil.copy2(tmp_file, property_paths["data"])
+                    shutil.copy2(Butler.tmp_data_files[i], os.path.join(property_paths["data"], Butler.tmp_data_target_names[i]))
 
                 if Butler.png_path is not None:
                     shutil.copy2(Butler.png_path, os.path.join(property_paths["data"], "img.png"))
@@ -543,27 +546,37 @@ class Butler:
             return None
 
     @staticmethod
-    def add_tmp_files(file_paths, tmp_file_folder):
+    def add_tmp_files(file_paths, tmp_file_folder, target_names=None):
         """Adds files to be copied to the folder: property_j/[data, imgs, figs] when the function decorated by `@butler` is called.
 
         Parameters
         ----------
         file_paths : list[str] or str
-            The files to be copied to tmp_file_folder
+            The files to be copied to tmp_file_folder.
         tmp_file_folder : str
             One of ["data", "imgs", "figs"]. The `experiment_i/property_j` subfolder into which the `file_paths` files are to be copied.
+        target_names : list[str] or str
+            The names that the `file_paths` names will be copied into. E.g. file_paths="/tmp/box.png", target_names="cheezit.png"
 
         """
         assert tmp_file_folder in {"data", "figs", "imgs"}, "folder has to be one of {\"data\", \"figs\", \"imgs\"}"
+        if target_names is not None and type(target_names) != str and type(file_paths) != str:
+            assert len(target_names) == file_paths, "`target_names` has to be the same length as the source `file_paths`"
         valid_file_paths = file_paths
         if type(valid_file_paths) not in {list, tuple}:
             valid_file_paths = (valid_file_paths, )
+        valid_target_names = target_names
+        if type(valid_target_names) not in {list, tuple}:
+            valid_target_names = (valid_target_names, )
         if tmp_file_folder == "data":
             Butler.tmp_data_files = valid_file_paths
+            Butler.tmp_data_target_names = valid_target_names
         if tmp_file_folder == "figs":
             Butler.tmp_fig_files = valid_file_paths
+            Butler.tmp_fig_target_names = valid_target_names
         if tmp_file_folder == "imgs":
             Butler.tmp_img_files = valid_file_paths
+            Butler.tmp_img_target_names = valid_target_names
         # print("BUTLER: ADDED TMP FILES TO: ", tmp_file_folder, " FILES: ", file_paths)
 
     @staticmethod
@@ -729,7 +742,7 @@ if __name__ == "__main__":
             print("result: ", a / b)
             # print(dir())
             Butler.add_object_context({"common_name": "yellow_sponge"}, override_recommendation=False)
-            Butler.add_tmp_files("C:/Users/jhart/PycharmProjects/butler/tests/banana300.png", "data")
+            Butler.add_tmp_files("C:/Users/jhart/PycharmProjects/butler/tests/banana300.png", "data", "banana.png")
             Butler.add_measurement_png("C:/Users/jhart/PycharmProjects/butler/tests/banana300.png")
             return _meas, a / b
 

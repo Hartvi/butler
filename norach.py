@@ -94,12 +94,12 @@ def get_file_names(stewarded_dict):
     #     print("\033[1;33mRecommended `exp../{prop}/data/img.png` not present in request[\"measurement\"] dictionary\033[0m")
 
     for sensor_name in sensor_outputs:
-        print("sensor_name", sensor_name)
+        # print("sensor_name", sensor_name)
         output_quantities = sensor_outputs[sensor_name]
         for output_quantity in output_quantities:
-            print("output_quantity", output_quantity)
+            # print("output_quantity", output_quantity)
             single_output = output_quantities[output_quantity]
-            print("single_output", single_output)
+            # print("single_output", single_output)
             # print("type:", type(single_output))
             single_output_str = str(single_output)
             if os.path.isfile(single_output_str):
