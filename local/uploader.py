@@ -1,10 +1,9 @@
 from __future__ import print_function, division
 
-import os
 import requests
 import json
 
-import butler2, norach, steward
+import norach
 
 
 def post_measurement(auth_tuple,
@@ -53,7 +52,7 @@ if __name__ == "__main__":
     """
 
     print("\nuploader: uploader")
-    with open(r"C:\Users\jhart\PycharmProjects\butler\tests\testy_json.json", "r") as fp:
+    with open(r"/tests/testy_json.json", "r") as fp:
         stewarded_dict = json.load(fp)
         upload_dict = {"measurement": json.dumps(stewarded_dict)}
         file_paths = norach.get_file_names(stewarded_dict)

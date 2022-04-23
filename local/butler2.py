@@ -194,7 +194,11 @@ class Butler:
     tmp_img_target_names = ()
     tmp_fig_target_names = ()
     tmp_data_target_names = ()
+    file_mappings = dict()
     png_path = None
+    img_files = ()
+    fig_files = ()
+    data_files = ()
 
     @staticmethod
     def __call__(keywords=(),
@@ -250,7 +254,9 @@ class Butler:
 
         assert type(keywords) == str or type(keywords) == list or type(keywords) == tuple, \
             "keywords must be of type str or list[str]"
-
+        Butler.fig_files = fig_files
+        Butler.img_files = img_files
+        Butler.data_files = data_files
         try:
             with open(setup_file, "r") as fp:
                 Butler.setup = json.load(fp)
@@ -299,80 +305,64 @@ class Butler:
                 if type(output_variable) == dict:
                     new_measurement = output_variable
                 elif isinstance(output_variable, object):
-                    # elif type(output_variable) == instance:
-                    # print("type(output_variable):", type(output_variable).__dict__)
                     new_measurement = output_variable.__dict__
-                    # print("outout var is a CLASSSS!!!!")
                 else:
                     raise TypeError(
                         "for return value or specified output_variable is not of type [dict, PropertyMeasurement]"
                     )
 
-                # print("new measurement: ", new_measurement)
-                # exit(1)
                 property_paths = Butler._create_property_entry(Butler.session_paths["exp"], new_measurement)
-                if len(fig_files) > 0:
-                    for fig_file in fig_files:
-                        shutil.copy2(fig_file, property_paths["figs"])
+                folder_names = ['fig', 'img', 'data']
 
-                if len(img_files) > 0:
-                    for img_file in img_files:
-                        shutil.copy2(img_file, property_paths["imgs"])
+                # save the provided tmp_files into the property's imgs/figs/data folders
+                for n in folder_names:
+                    _files = eval("Butler."+n+"_files")
+                    plural_n = n+("s" if len(n) == 3 else "")
+                    property_path = property_paths[plural_n]
+                    if len(_files) > 0:
+                        for _file in eval(n+"_files"):
+                            shutil.copy2(_file, property_path)
 
-                if len(data_files) > 0:
-                    for data_file in data_files:
-                        shutil.copy2(data_file, property_paths["data"])
-
-                # tmp_img_files = Butler.get_tmp_files("img")
-                for i in range(len(Butler.tmp_img_files)):
-                    # print("BUTLER FILE: ", tmp_file, " TO ", property_paths["img"])
-                    shutil.copy2(Butler.tmp_img_files[i], os.path.join(property_paths["img"], Butler.tmp_img_target_names[i]))
-
-                # tmp_fig_files = Butler.get_tmp_files("fig")
-                for i in range(len(Butler.tmp_fig_files)):
-                    # print("BUTLER FILE: ", tmp_file, " TO ", property_paths["fig"])
-                    shutil.copy2(Butler.tmp_fig_files[i], os.path.join(property_paths["fig"], Butler.tmp_fig_target_names[i]))
-
-                # tmp_data_files = Butler.get_tmp_files("data")
-                for i in range(len(Butler.tmp_data_files)):
-                    # print("BUTLER FILE: ", tmp_file, " TO ", property_paths["data"])
-                    shutil.copy2(Butler.tmp_data_files[i], os.path.join(property_paths["data"], Butler.tmp_data_target_names[i]))
+                    butler_tmp_n = "Butler.tmp_" + n
+                    tmp_length = len(eval(butler_tmp_n+"_files"))  # e.g. tmp_img_files, tmp_data_files, tmp_fig_files
+                    for i in range(tmp_length):
+                        print("target path:", os.path.join(property_path, eval(butler_tmp_n+"_target_names[i]")))
+                        target_path = os.path.join(property_path, eval(butler_tmp_n+"_target_names[i]"))
+                        butler_tmp_n_files = butler_tmp_n+"_files[i]"
+                        eval_butler_tmp_n_files = eval(butler_tmp_n_files)
+                        shutil.copy2(eval_butler_tmp_n_files, target_path)
+                        Butler.file_mappings[eval_butler_tmp_n_files] = target_path
 
                 if Butler.png_path is not None:
                     shutil.copy2(Butler.png_path, os.path.join(property_paths["data"], "img.png"))
                 Butler.png_path = None
 
-                # for some reason having this in another method doesnt register
+                # for some reason having this in a separate method doesn't register
                 Butler.tmp_data_files = ()
                 Butler.tmp_fig_files = ()
                 Butler.tmp_img_files = ()
+
                 # the prints containing `keywords` go into property_paths["log"]
                 property_log = property_paths["log"]
 
-
-                """
-                data variables should know where they come from:
-                data_vars = [{"var_name": {"values": var_name, "source": "setup_el_name"-must be in setup values}}]
-                """
+                # data variables should know where they come from:
+                # data_vars = [{"var_name": {"setup_el_name": "values"}}]
                 data_variables_listified = data_variables
                 if type(data_variables) not in {np.ndarray, tuple, list}:
                     if type(data_variables) == dict:
-                        data_variables_listified = (data_variables,)
+                        data_variables_listified = (data_variables, )
                     else:
                         raise TypeError(
                             "data_variables is not of type [iterable[dict], dict]: " +
                             str(type(data_variables_listified))
                         )
-                for varname in data_variables_listified:
-                    new_v_name = varname.replace("self.", "")
-                    if "self." in varname:
-                        data_variable = args[0].__dict__[new_v_name]  # for class functions `func(self, arg1)`
+                for var_name in data_variables_listified:
+                    new_v_name = var_name.replace("self.", "")
+                    if "self." in var_name:
+                        # for class functions `func(self, arg1)` => args[0] = self
+                        data_variable = args[0].__dict__[new_v_name]
                     else:
                         data_variable = eval(new_v_name)
-                    # assert "values" in data_variable, \
-                    #     "\"values\" key not in variable " + str(varname) + ": " + str(data_variable)
-                    # assert "source" in data_variable, \
-                    #     "\"source\" key not in variable " + str(varname) + ": " + str(data_variable)
                     with open(os.path.join(property_paths["data"], new_v_name + ".json"), "w") as fp:
                         dump_numpy_proof(data_variable, fp)
                 object_context = Butler._pop_object_context()
@@ -382,7 +372,7 @@ class Butler:
 
                 tmp_keywords = keywords
                 if type(keywords) == str:
-                    tmp_keywords = (keywords,)
+                    tmp_keywords = (keywords, )
                 print_split = processed_std_out.split("\n")
                 butlered_lines = ""
                 for kwd in tmp_keywords:
@@ -404,23 +394,9 @@ class Butler:
         return decorated
 
     @staticmethod
-    def _get_free_num(str_in):
-        split_str = str_in.split("_")
-        if os.path.isfile(str_in):
-            return 0
-        if "experiment_" in str_in:
-            try:
-                return int(split_str[-1]) + 1
-            except:
-                return 0
-        else:
-            return 0
-
-    @staticmethod
     def _create_directory_tree_for_session(parent_dir, setup):
         existing_directories = os.listdir(os.path.dirname(__file__))
         # get the lowest unused number that isn't lower than any other number in this dir
-        # lowest_num = max(map(Butler._get_free_num, [os.path.join(os.path.dirname(__file__), exdir) for exdir in existing_directories]))
 
         experiment_suffix = get_time_string()
         new_exp_path = os.path.join(parent_dir, DirectoryStructure["name"].format(experiment_suffix))
@@ -448,7 +424,15 @@ class Butler:
         j = os.path.join
         prop_struct = PropertyStructure["structure"]
 
-        new_prop_dir = j(parent_dir, get_set(Butler.property_object_property_name, meas_dict) + "_" + str(get_time_string()))
+        ls_exp = os.listdir(parent_dir)
+        next_index = 0
+        # print(meas_dict["meas_prop"])
+        for n in ls_exp:
+            # print(n, meas_dict["meas_prop"] in n)
+            if get_set(Butler.property_object_property_name, meas_dict) in n:  # "mass" in "mass_0"
+                next_index = max(next_index, int(n.split("_")[-1]) + 1)
+
+        new_prop_dir = j(parent_dir, get_set(Butler.property_object_property_name, meas_dict) + "_" + str(next_index))
         imgs_dir = j(new_prop_dir, prop_struct["imgs"])
         figs_dir = j(new_prop_dir, prop_struct["figs"])
         data_dir = j(new_prop_dir, prop_struct["data"]["name"])
@@ -562,20 +546,6 @@ class Butler:
             raise ValueError("Butler.png_path is being set twice in the same function!!")
         Butler.png_path = png_path
 
-    @staticmethod
-    def get_tmp_files(figs_imgs_data):
-        # print("BUTLER: GETTING TMP FILES")
-        if figs_imgs_data == "figs":
-            ret = Butler.tmp_fig_files
-            return ret
-        if figs_imgs_data == "figs":
-            ret = Butler.tmp_fig_files
-            return ret
-        if figs_imgs_data == "data":
-            ret = Butler.tmp_data_files
-            return ret
-        return ()
-
 
 butler = Butler()  # to make `from butler2 import butler` possible and to have its fields recognized by IDEs
 """Butler collects and organizes experiment data into folders while the experiment is running.
@@ -670,7 +640,7 @@ if __name__ == "__main__":
             self.test_value1 = {"gripper_name": {"position": [1, 2, 3, 4, 5, 6, 7, 8, 9]}}
             self.test_value2 = {"gripper_name": {"values": [9, 8, 7, 6, 5, 6, 7, 8, 9]}}
             self.test_value3 = {"arm_name": {"current": [1, 2, 3, 4, 5, 6, 7, 8, 9]}}
-            self.test_value4 = {"camera": {"point_cloud": "C:/Users/jhart/PycharmProjects/butler/experiment_0/object_category_0/data/banana.png"}}
+            self.test_value4 = {"camera": {"point_cloud": "pointcloud.png"}}
 
         @butler(keywords="[INFO]", data_variables=("self.test_value2", "self.test_value3", "self.test_value4"), create_new_exp_on_run=True)
         def multiply(self, a, b):
@@ -702,8 +672,10 @@ if __name__ == "__main__":
             print("result: ", a / b)
             # print(dir())
             Butler.add_object_context({"common_name": "yellow_sponge"}, override_recommendation=False)
-            Butler.add_tmp_files("C:/Users/jhart/PycharmProjects/butler/tests/banana300.png", "data", "banana.png")
-            Butler.add_measurement_png("C:/Users/jhart/PycharmProjects/butler/tests/banana300.png")
+
+            # TODO: DICT which maps input files to final output files: {sensor_output_file_path: .../data/banana.png}
+            Butler.add_tmp_files("/tests/banana300.png", "data", "pointcloud.png")
+            Butler.add_measurement_png("../tests/banana300.png")
             return _meas, a / b
 
 

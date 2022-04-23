@@ -8,38 +8,58 @@ import json
 _experiment_ignored_names = r"(.*\..*)|(timestamp.*)"  # |(?!(.*\.json))
 _property_ignored_names = r"(log.txt)|(figs)|(imgs)"
 
+file_dirs = ("data", "figs", "imgs")
 
-def _data_dicts_to_sensor_outputs(sensor_outputs, data_dict, setup_dict):
+
+def _data_dicts_to_sensor_outputs(sensor_outputs, data_dict, setup_dict, prop_dir):
     # ret = dict()
     # if type(data_dict) != list and type(data_dict) == dict:
     #     data_dict = [data_dict, ]
     # elif type(data_dict) != list:
     #     raise TypeError("data_dict isn't a Union[dict, list]: " + str(data_dict))
-    print(sensor_outputs)
-    print("data_dict", data_dict)
-    for s in data_dict:
-        if s in setup_dict:
-            data_source = setup_dict[s]
-        elif s in setup_dict.values():
-            data_source = s
+    # print(sensor_outputs)
+    # print("data_dict", data_dict)
+    for sn in data_dict:  # sn = sensor name
+        # if the user entered the sensor name: ok; else if the type of sensor: convert to sensor name
+        # e.g. `gripper: robotiq 2f85` : it ends up being "robotiq 2f85" even if the user enters "gripper" as the source
+        if sn in setup_dict:
+            data_source = setup_dict[sn]
+        elif sn in setup_dict.values():
+            data_source = sn
         else:
-            raise KeyError("data source/sensor `"+str(s)+"` not specified in experiment_i/setup.json: "+str(setup_dict))
-        data_values = data_dict[s]
-        # if data_source in sensor_outputs:
-        #     raise KeyError("source \"" + str(data_source) + "\" already in sensor outputs: " + str(sensor_outputs))
-        # print(output)
-        # print(sensor_outputs)
-        data_source_exists = data_source in sensor_outputs
+            raise KeyError("data source/sensor `"+str(sn)+"` not specified in experiment_i/setup.json: "+str(setup_dict))
+
+        data_values = data_dict[sn]
+        print("data_values: ", data_values)
+        print("sensor_outputs.keys()", sensor_outputs.keys())
+        data_source_exists = data_source in sensor_outputs  # if a sensor has already been added to `sensor_outputs`
         sensor_output_keys = sensor_outputs[data_source].keys() if data_source_exists else list()
-        data_dict_keys = data_values.keys()
+        data_dict_keys = data_values.keys()  # the new arrivals - the keys that are about to be added
+
+        # if a modality has already been added and one tries to add it again
+        # e.g. sensor_outputs: already exists; data_dict: not existing, want to add this to sensor_outputs
+        #   sensor_outputs = {"2f85" : {"time": [0.01, 0.02]}} AND data_dict = {"2f85": {"time": [3, 4, 5]}}
+        #   it's ambiguous to add the modality `time` from `data_dict` to an already existing `time` in `sensor_outputs`
         if len(set(sensor_output_keys) & set(data_dict_keys)) != 0:
-            raise KeyError("source \""+str(data_source)+"\" has colliding modalities: "+str(sensor_output_keys)+" VS "+str(data_dict_keys))
+            raise KeyError("source \"" + str(data_source) + "\" has colliding modalities: " +
+                           str(sensor_output_keys) + " VS " + str(data_dict_keys))
+        # if sensor is registered, just append the values
         if data_source_exists:
             for modality in data_values:
+                # print("sensor_outputs[data_source][modality]", sensor_outputs[data_source][modality])
                 sensor_outputs[data_source][modality] = data_values[modality]
         else:
             sensor_outputs[data_source] = data_values
-        # ret[data_source] = output["values"]
+        outs = sensor_outputs[data_source]
+        for modality in outs:
+            for fd in file_dirs:
+                output_name = str(outs[modality])
+                p = join(prop_dir, fd, output_name)
+                if os.path.isfile(p) and p != output_name:
+                    # print("path before: ", output_name)
+                    outs[modality] = p
+                    # print("path after: ", p)
+        # print("sensor_outputs[data_source]: ", sensor_outputs[data_source])
 
 
 def _make_one_entry(parameters, entry_value, measurement_object_json):
@@ -68,9 +88,9 @@ def experiment_to_json(experiment_directory, out_file):
     Parameters
     ----------
     experiment_directory : str
-        The <i>experiment{i}</i> directory containing the directory structure as specified in butler2.py
+        The experiment{i} directory containing the directory structure as specified in butler2.py
     out_file : str or None
-        Absolute path to the output file. <i>"*.json"</i> to write to the output file, <i>None</i> to not write to a file.
+        Absolute path to the output file. "*.json" to write to the output file, None to not write to a file.
 
     Returns
     -------
@@ -89,19 +109,21 @@ def experiment_to_json(experiment_directory, out_file):
     valid_prop_dirs = list()
     for prop_dir in valid_dirs:
         abs_prop_dir = join(experiment_directory, prop_dir)
-        print(abs_prop_dir)
-        sub_prop_dirs = os.listdir(abs_prop_dir)
-        for _ in sub_prop_dirs:
-            matches = re.findall(pattern=_property_ignored_names, string=_)
-            if len(matches) == 0:
-                valid_prop_dirs.append(join(abs_prop_dir, _))
-        # print(valid_prop_dirs)
+        valid_prop_dirs.append(abs_prop_dir)
+        # print(abs_prop_dir)
+        # sub_prop_dirs = os.listdir(abs_prop_dir)
+        # for _ in sub_prop_dirs:
+        #     matches = re.findall(pattern=_property_ignored_names, string=_)
+        #     if len(matches) == 0:
+        #         valid_prop_dirs.append(join(abs_prop_dir, _))
+    # print(valid_prop_dirs)
 
         # prop_name = prop_dir.split("_")[0]
         # print(prop_name)
     object_context_dict = None
-    print("valid_prop_dirs", valid_prop_dirs)
-    for data_dir in valid_prop_dirs:
+    # print("valid_prop_dirs", valid_prop_dirs)
+    for prop_dir in valid_prop_dirs:
+        data_dir = join(prop_dir, "data")
         certain_files = {"object_context": "object_context.json", "measurement": "measurement.json"}
         object_context_file = join(data_dir, certain_files["object_context"])
         if os.path.exists(object_context_file):
@@ -112,19 +134,21 @@ def experiment_to_json(experiment_directory, out_file):
         measurement_object_file = join(data_dir, certain_files["measurement"])
         with open(measurement_object_file, "r") as fp:
             measurement_object_dict = json.load(fp)
-        print("measurement_object_dict", measurement_object_dict)
+        # print("measurement_object_dict", measurement_object_dict)
         data_dir_ls = os.listdir(data_dir)
         data_jsons = [_ for _ in data_dir_ls if (_ not in certain_files.values() and ".json" in _)]
 
         sensor_outputs = dict()
         meas_values = measurement_object_dict["values"]
+
+        # print("experiment_directory: ", experiment_directory, "data_dir", prop_dir)
         if meas_values is not None:  # if `meas_object.values` is filled
-            _data_dicts_to_sensor_outputs(sensor_outputs, meas_values, setup_dict)
+            _data_dicts_to_sensor_outputs(sensor_outputs, meas_values, setup_dict, prop_dir)
         for data_json in data_jsons:  # if `data_variables` is filled
-            print("data json: ", join(data_dir, data_json))
+            # print("data json: ", join(data_dir, data_json))
             with open(join(data_dir, data_json), "r") as fp:
                 data_dict = json.load(fp)
-                _data_dicts_to_sensor_outputs(sensor_outputs, data_dict, setup_dict)
+                _data_dicts_to_sensor_outputs(sensor_outputs, data_dict, setup_dict, prop_dir)
         print("setup_json:", setup_dict)
         print("object_context:", object_context_dict)
         print("sensor_outputs:", sensor_outputs)
@@ -170,7 +194,7 @@ def experiment_to_json(experiment_directory, out_file):
                 "`grasp` dictionary must contain keys \"position\": xyz, \"rotation\": xyz, \"grasped\": bool"
         print("grasp", grasp)
 
-        print("data_dir:", data_dir)
+        print("data_dir:", prop_dir)
         potential_img_dir = join(data_dir, "img.png")
 
 
@@ -197,6 +221,6 @@ def experiment_to_json(experiment_directory, out_file):
 
 
 if __name__ == "__main__":
-    experiment_to_json("experiment_0", out_file="tests/tesy_json.json")
+    experiment_to_json(r"C:\Users\jhart\PycharmProjects\butler\experiment_2022_04_23_18_27_13", out_file="../tests/tesy_json.json")
 
 

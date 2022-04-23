@@ -84,9 +84,9 @@ def get_file_names(stewarded_dict):
     Returns
     -------
     dict
-        The dictionary with:
-            keys: Space-notation strings to where the files belong on the server. E.g. measurement.png / measurement["png"] => "measurement png".
-            values: Absolute file paths on the local machine.
+        A dictionary with:
+            `keys`: Space-notation strings to where the files belong on the server. E.g. measurement.png / measurement["png"] => "measurement png".\n
+            `values`: Absolute file paths on the local machine.
     """
     ret = dict()
     # sensor files:
@@ -110,6 +110,7 @@ def get_file_names(stewarded_dict):
             # print("single_output", single_output)
             # print("type:", type(single_output))
             single_output_str = str(single_output)
+
             if os.path.isfile(single_output_str):
                 ret["measurement "+str(sensor_name)+" "+str(output_quantity)] = single_output
             elif os.path.isabs(single_output_str):
@@ -142,12 +143,12 @@ def get_file_names(stewarded_dict):
 
 
 if __name__ == "__main__":
-    exp_folder = r"C:\Users\jhart\PycharmProjects\butler\experiment_0"
+    exp_folder = r"C:\Users\jhart\PycharmProjects\butler\experiment_2022_04_23_18_27_13"
     # print(get_measurement_image_path(exp_folder))
     # print(get_property_folder_list(exp_folder))
     # for prop_folder in get_property_folder_list(exp_folder):
     #     print(get_property_data_file_paths(prop_folder))
-    with open(r"C:\Users\jhart\PycharmProjects\butler\tests\testy_json.json", "r") as fp:
+    with open(r"/tests/tesy_json.json", "r") as fp:
         stewarded_dict = json.load(fp)
         print("file names:", get_file_names(stewarded_dict))
     pass

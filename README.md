@@ -3,9 +3,34 @@ This is a utility repository for organized data storage without the need to modi
 
 The crux of this project is the `@butler` decorator. Simply decorate a function and it saves variables and print outputs as you like.
 
+# sphinx
+- commands in `docs/` folder:
+  - `sphinx-apidoc -o ./source ..` - creates modules for all files
+  - `.\make.bat html` - makes the html
+  - `.\make.bat json` - makes the json version of it
+- [basic tree tutorial](https://eikonomega.medium.com/getting-started-with-sphinx-autodoc-part-1-2cebbbca5365)
+  - above `.. toctree::` in `docs/source/index.rst`:
+    - ```
+      .. automodule:: butler2
+      :members:
+      ```
+- [modules tutorial](https://www.youtube.com/watch?v=b4iFyrLQQh4) (better atm)
+  - below `.. toctree::` in `docs/source/index.rst`:
+    - ```
+      **[empty line]**
+      modules
+      ```
+
+# difference between ROSBAG & this
+- rosbags need the actual *datatype + ROS*
+- this is just *json + internet*
+
 
 ### 04/23
 - add timestamp in names
+- add docs
+- fix file inconsistencies when setting tmp files
+  - now it's possible to just enter
 
 ### 04/19
 - Jan tips:
