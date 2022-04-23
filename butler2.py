@@ -420,9 +420,10 @@ class Butler:
     def _create_directory_tree_for_session(parent_dir, setup):
         existing_directories = os.listdir(os.path.dirname(__file__))
         # get the lowest unused number that isn't lower than any other number in this dir
-        lowest_num = max(map(Butler._get_free_num, [os.path.join(os.path.dirname(__file__), exdir) for exdir in existing_directories]))
+        # lowest_num = max(map(Butler._get_free_num, [os.path.join(os.path.dirname(__file__), exdir) for exdir in existing_directories]))
 
-        new_exp_path = os.path.join(parent_dir, DirectoryStructure["name"].format(lowest_num))
+        experiment_suffix = get_time_string()
+        new_exp_path = os.path.join(parent_dir, DirectoryStructure["name"].format(experiment_suffix))
         new_log_path = os.path.join(new_exp_path, DirectoryStructure["structure"]["log"])
         new_setup_json_path = os.path.join(new_exp_path, "setup.json")
         new_time_stamp_path = os.path.join(new_exp_path,
@@ -447,14 +448,7 @@ class Butler:
         j = os.path.join
         prop_struct = PropertyStructure["structure"]
 
-        ls_exp = os.listdir(parent_dir)
-        next_index = 0
-        for n in ls_exp:
-            # print(get_set(Butler.property_object_property_name, meas_dict), "in", n, ":", get_set(Butler.property_object_property_name, meas_dict) in n)
-            if get_set(Butler.property_object_property_name, meas_dict) in n:  # "mass" in "mass_0"
-                next_index = max(int(n.split("_")[-1]) + 1, next_index)
-
-        new_prop_dir = j(parent_dir, get_set(Butler.property_object_property_name, meas_dict) + "_" + str(next_index))
+        new_prop_dir = j(parent_dir, get_set(Butler.property_object_property_name, meas_dict) + "_" + str(get_time_string()))
         imgs_dir = j(new_prop_dir, prop_struct["imgs"])
         figs_dir = j(new_prop_dir, prop_struct["figs"])
         data_dir = j(new_prop_dir, prop_struct["data"]["name"])
@@ -464,17 +458,6 @@ class Butler:
         new_files = [log_file, meas_file]
         for d in new_dirs:
             new_dir_name = d
-            # new_index = 0
-            # while os.path.isdir(new_dir_name):  # idk why but just in case the directory exists here
-            #     new_split = new_dir_name.split("_")
-            #     try:
-            #         new_index = int(new_split[-1]) + 1
-            #     except:
-            #         new_index = 0
-            #     new_name = ""
-            #     for _ in range(len(new_split) - 1):
-            #         new_name += new_split[_] + "_"
-            #     new_dir_name = new_name + str(new_index)
             os.mkdir(new_dir_name)
         for f in new_files:
             with open(f, "w") as f:
@@ -490,22 +473,6 @@ class Butler:
         ret["log"] = log_file
         ret["meas"] = meas_file
         return ret
-
-    # @staticmethod
-    # def _update_internal_setup(setup_dict):  # atm only the last used setup for the given quantity
-    #     setups_path = os.path.join(this_dir(), "setups")
-    #     if not os.path.isdir(setups_path):
-    #         Butler.setups_folder = setups_path
-    #         os.mkdir(setups_path)
-    #     setups_path = os.path.join(setups_path, "setups.json")
-    #     if not os.path.isfile(setups_path):
-    #         with open(setups_path, "w") as fp:
-    #             fp.write("{}")
-    #     with open(setups_path, "r") as fp:
-    #         current_exp_setup = json.load(fp)
-    #     with open(setups_path, "w") as fp:
-    #         current_exp_setup[get_time_string()] = setup_dict
-    #         dump_numpy_proof(current_exp_setup, fp)
 
     @staticmethod
     def add_object_context(context, override_recommendation=False):
@@ -640,17 +607,10 @@ ignore_colours : bool
 create_new_exp_on_run : bool
     Whether to create a new experiment_i folder on every run of the function.
 
-Additional parameters
----------------------
-
-
 """
 
 
 class PropertyMeasurement:
-    """
-    "density", "continuous", {"mean": 100, "sigma": 10}, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], meas_ID=1
-    """
 
     def __init__(self, property_name=None, measurement_type=None, parameters=None, units=None,
                  grasp=None, values=None, repository=None,

@@ -9,12 +9,26 @@ import butler2, norach, steward
 
 def post_measurement(auth_tuple,
                      endpoint="http://127.0.0.1:8000/rest/",
-                     path="measurements/",
                      data=None,
                      file_paths=None,
-                     method="POST",
                      ):
+    """This posts a measurement to http://localhost:8000/rest/measurements/
 
+    Parameters
+    ----------
+    auth_tuple : tuple[str] or list[str]
+        The (user, pass) authentication tuple.
+    endpoint : str
+        Basically the website name. Default is the localhost.
+    data : dict[str, str]
+        The dict in the format `str: json_str` {"measurement": "{"measurement": ..., "entry": ...}"}
+    file_paths : dict[str, str or unicode]
+        Dictionary containing the file paths to be uploaded to the server.
+        Format: {server destination: abs_path}. E.g. {"measurement png": /tmp/img.png}
+    """
+
+    path = "measurements/"
+    method = "POST"
     file_bytes = dict()
     for file_designation in file_paths:
         f = open(file_paths[file_designation], 'rb')
@@ -43,11 +57,11 @@ if __name__ == "__main__":
         stewarded_dict = json.load(fp)
         upload_dict = {"measurement": json.dumps(stewarded_dict)}
         file_paths = norach.get_file_names(stewarded_dict)
+        print("file_paths:", file_paths)
 
         print(
         post_measurement(auth_tuple=("jeff", "jeff"),
                          endpoint="http://127.0.0.1:8000/rest/",
-                         path="measurements/",
                          data=upload_dict,
                          file_paths=file_paths)
         )

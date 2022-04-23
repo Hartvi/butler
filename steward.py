@@ -1,23 +1,15 @@
 from __future__ import print_function
 import os
+from os.path import join
 import re
 import json
 
-from numpy.testing._private.parameterized import param
 
-join = os.path.join
-
-_experiment_ignored_names = "(.*\..*)|(timestamp.*)"  # |(?!(.*\.json))
-_property_ignored_names =   "(log.txt)|(figs)|(imgs)"
+_experiment_ignored_names = r"(.*\..*)|(timestamp.*)"  # |(?!(.*\.json))
+_property_ignored_names = r"(log.txt)|(figs)|(imgs)"
 
 
-def merge_two_dicts(x, y):
-    z = x.copy()   # start with keys and values of x
-    z.update(y)    # modifies z with keys and values of y
-    return z
-
-
-def data_dicts_to_sensor_outputs(sensor_outputs, data_dict, setup_dict):
+def _data_dicts_to_sensor_outputs(sensor_outputs, data_dict, setup_dict):
     # ret = dict()
     # if type(data_dict) != list and type(data_dict) == dict:
     #     data_dict = [data_dict, ]
@@ -50,7 +42,7 @@ def data_dicts_to_sensor_outputs(sensor_outputs, data_dict, setup_dict):
         # ret[data_source] = output["values"]
 
 
-def make_one_entry(parameters, entry_value, measurement_object_json):
+def _make_one_entry(parameters, entry_value, measurement_object_json):
     entry_value["std"] = parameters["std"]
     entry_value["mean"] = parameters["mean"]
     units = None
@@ -70,15 +62,28 @@ def make_one_entry(parameters, entry_value, measurement_object_json):
 
 
 # tsumari: get experiment folder, convert it to the measurement.json format then upload it
-def experiment_to_json(experiment_directory):
-    # type: (str) -> str
+def experiment_to_json(experiment_directory, out_file):
+    """Takes a butlered experiment folder and converts it into a dictionary that is in the format that will be uploaded to the server.
+
+    Parameters
+    ----------
+    experiment_directory : str
+        The <i>experiment{i}</i> directory containing the directory structure as specified in butler2.py
+    out_file : str or None
+        Absolute path to the output file. <i>"*.json"</i> to write to the output file, <i>None</i> to not write to a file.
+
+    Returns
+    -------
+    dict
+        Returns the processed experiment in the form of a dict, which close to the final format for uploading.
+    """
     prop_dirs = os.listdir(experiment_directory)
     valid_dirs = list()
     for _ in prop_dirs:
         matches = re.findall(pattern=_experiment_ignored_names, string=_)
         if len(matches) == 0:
             valid_dirs.append(_)
-    setup_file = os.path.join(experiment_directory, "setup.json")
+    setup_file = join(experiment_directory, "setup.json")
     with open(setup_file, "r") as fp:
         setup_dict = json.load(fp)  # final, 1 for N objects
     valid_prop_dirs = list()
@@ -114,12 +119,12 @@ def experiment_to_json(experiment_directory):
         sensor_outputs = dict()
         meas_values = measurement_object_dict["values"]
         if meas_values is not None:  # if `meas_object.values` is filled
-            data_dicts_to_sensor_outputs(sensor_outputs, meas_values, setup_dict)
+            _data_dicts_to_sensor_outputs(sensor_outputs, meas_values, setup_dict)
         for data_json in data_jsons:  # if `data_variables` is filled
             print("data json: ", join(data_dir, data_json))
             with open(join(data_dir, data_json), "r") as fp:
                 data_dict = json.load(fp)
-                data_dicts_to_sensor_outputs(sensor_outputs, data_dict, setup_dict)
+                _data_dicts_to_sensor_outputs(sensor_outputs, data_dict, setup_dict)
         print("setup_json:", setup_dict)
         print("object_context:", object_context_dict)
         print("sensor_outputs:", sensor_outputs)
@@ -138,7 +143,7 @@ def experiment_to_json(experiment_directory):
             if len(set(parameters) & {"std", "mean"}) == 2:  # 1D
                 entry_value = dict()
                 entry_values.append(entry_value)
-                make_one_entry(parameters, entry_value, measurement_object_dict)  # inplace change entry_value dict
+                _make_one_entry(parameters, entry_value, measurement_object_dict)  # inplace change entry_value dict
             else:
                 for prop_k in parameters:
                     prop_v = parameters[prop_k]
@@ -146,7 +151,7 @@ def experiment_to_json(experiment_directory):
                         continue
                     entry_value = dict()
                     entry_values.append(entry_value)
-                    make_one_entry(parameters, entry_value, measurement_object_dict)
+                    _make_one_entry(parameters, entry_value, measurement_object_dict)
         elif measurement_type == "categorical":
             cat_sum = sum(parameters.values())
             if abs(cat_sum - 1.0) > 0.01:
@@ -157,7 +162,7 @@ def experiment_to_json(experiment_directory):
                 prop_el = {"name": cat, "probability": parameters[cat]}
                 entry_values.append(prop_el)
             if entry_dict["name"] in {"stiffness", "elasticity", "size"}:
-                raise KeyError(entry_dict["name"]+" is not a categorical property")
+                raise KeyError(str(entry_dict["name"])+" is not a categorical property")
 
         grasp = measurement_object_dict.get("grasp")
         if grasp is not None:
@@ -166,7 +171,7 @@ def experiment_to_json(experiment_directory):
         print("grasp", grasp)
 
         print("data_dir:", data_dir)
-        potential_img_dir = os.path.join(data_dir, "img.png")
+        potential_img_dir = join(data_dir, "img.png")
 
 
         print("entry_object", entry_dict)
@@ -186,11 +191,12 @@ def experiment_to_json(experiment_directory):
         measurement_dict["grasp"] = grasp
         request_dict["entry"] = entry_dict
         # print("\nrequest_dict: ", request_dict, "\n")
-        with open("tests/testy_json.json", "w") as fp:
+        with open(out_file, "w") as fp:
             json.dump(fp=fp, obj=request_dict, indent=True)
+        return request_dict
 
 
 if __name__ == "__main__":
-    experiment_to_json("experiment_0")
+    experiment_to_json("experiment_0", out_file="tests/tesy_json.json")
 
 

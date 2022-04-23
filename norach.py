@@ -74,11 +74,19 @@ def post_measurement(experiment_folder, auth_tuple=("user", "pass"), data=None, 
 
 
 def get_file_names(stewarded_dict):
-    """
-    todo files:
-    - sensor_outputs
-    - object_instance
-    - property_elements
+    """Collects the file names to be uploaded to the server from the "stewarded" dictionary.
+
+    Parameters
+    ----------
+    stewarded_dict : dict
+        The dictionary as is output by `~steward.experiment_to_json`
+
+    Returns
+    -------
+    dict
+        The dictionary with:
+            keys: Space-notation strings to where the files belong on the server. E.g. measurement.png / measurement["png"] => "measurement png".
+            values: Absolute file paths on the local machine.
     """
     ret = dict()
     # sensor files:

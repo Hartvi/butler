@@ -4,6 +4,15 @@ This is a utility repository for organized data storage without the need to modi
 The crux of this project is the `@butler` decorator. Simply decorate a function and it saves variables and print outputs as you like.
 
 
+### 04/23
+- add timestamp in names
+
+### 04/19
+- Jan tips:
+  - button triggers at runtime - e.g. when you press 'x', save the timestamp
+  - maybe experiment_timestamp
+  - UUID for timestamps
+
 ### 04/16
 - add `uploader.py`
   - this tests uploading to the server using the formatted json *and* with files in the request
