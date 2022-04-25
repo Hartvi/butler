@@ -1,14 +1,16 @@
-from __future__ import print_function
+from __future__ import print_function, division
 import os
-from os.path import join
-import re
 import json
+import re
+
+from os.path import join
+
+from local import conf
+from utils import file_dirs
 
 
 _experiment_ignored_names = r"(.*\..*)|(timestamp.*)"  # |(?!(.*\.json))
 _property_ignored_names = r"(log.txt)|(figs)|(imgs)"
-
-file_dirs = ("data", "figs", "imgs")
 
 
 def _data_dicts_to_sensor_outputs(sensor_outputs, data_dict, setup_dict, prop_dir):
@@ -81,14 +83,13 @@ def _make_one_entry(parameters, entry_value, measurement_object_json):
     entry_value["name"] = property_name
 
 
-# tsumari: get experiment folder, convert it to the measurement.json format then upload it
-def experiment_to_json(experiment_directory, out_file):
+def experiment_to_json(experiment_directory, out_file=None):
     """Takes a butlered experiment folder and converts it into a dictionary that is in the format that will be uploaded to the server.
 
     Parameters
     ----------
     experiment_directory : str
-        The experiment{i} directory containing the directory structure as specified in butler2.py
+        The experiment{i} directory containing the directory structure as specified in butler.py
     out_file : str or None
         Absolute path to the output file. "*.json" to write to the output file, None to not write to a file.
 
@@ -97,6 +98,9 @@ def experiment_to_json(experiment_directory, out_file):
     dict
         Returns the processed experiment in the form of a dict, which close to the final format for uploading.
     """
+    if out_file is None:
+        out_file = "upload_dict_"+"_".join(experiment_directory.split("_")[-6:]) + ".json"
+        out_file = os.path.abspath(os.path.join(conf.upload_dicts_directory, out_file))
     prop_dirs = os.listdir(experiment_directory)
     valid_dirs = list()
     for _ in prop_dirs:
@@ -118,8 +122,8 @@ def experiment_to_json(experiment_directory, out_file):
         #         valid_prop_dirs.append(join(abs_prop_dir, _))
     # print(valid_prop_dirs)
 
-        # prop_name = prop_dir.split("_")[0]
-        # print(prop_name)
+    # prop_name = prop_dir.split("_")[0]
+    # print(prop_name)
     object_context_dict = None
     # print("valid_prop_dirs", valid_prop_dirs)
     for prop_dir in valid_prop_dirs:
@@ -218,9 +222,3 @@ def experiment_to_json(experiment_directory, out_file):
         with open(out_file, "w") as fp:
             json.dump(fp=fp, obj=request_dict, indent=True)
         return request_dict
-
-
-if __name__ == "__main__":
-    experiment_to_json(r"C:\Users\jhart\PycharmProjects\butler\experiment_2022_04_23_18_27_13", out_file="../tests/tesy_json.json")
-
-

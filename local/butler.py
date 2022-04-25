@@ -2,97 +2,27 @@ from __future__ import print_function, division
 
 import sys
 import os
-from io import BytesIO as StringIO
-from datetime import datetime
+from io import BytesIO
 import json
 import numpy as np
 import re
-from copy import deepcopy
 import shutil
 
-__all__ = ["dump_numpy_proof", "numpy_to_native", "PropertyMeasurement", "butler"]
-_real_std_out = None
+from utils import dump_numpy_proof, get_time_string
+import conf
+
+__all__ = ["PropertyMeasurement", "butler"]
+_real_std_out = None  # type: BytesIO
 
 
-def dump_numpy_proof(something, fp):
-    """A np.ndarray immune json.dump(sth, fp)
 
+class CustomBytesIO(BytesIO):
+    """BytesIO pipe that copies all prints into itself
     """
-    something = numpy_to_native(something)
-    json.dump(something, fp)
-
-
-def numpy_to_native(something, inplace=False):
-    """Recursively converts np.ndarrays to lists inside all combinations of nested lists, tuples, dicts, sets
-
-    Parameters
-    ----------
-    something : list or tuple or dict or set or np.ndarray
-        It has too many np.ndarrays.
-    inplace : bool
-        Whether to overwrite the something in-place
-
-    Returns
-    -------
-    list or tuple or dict or set
-        A denumpyified something
-    """
-    if inplace:
-        new_something = something
-    else:
-        new_something = deepcopy(something)
-    if type(new_something) == np.ndarray:
-        new_something = new_something.tolist()
-    if type(new_something) == dict:
-        for k in new_something:
-            if type(new_something[k]) == np.ndarray:
-                new_something[k] = new_something[k].tolist()
-            if type(new_something[k]) == dict:
-                new_something[k] = numpy_to_native(new_something[k])
-            elif type(new_something[k]) == list:
-                new_something[k] = numpy_to_native(new_something[k])
-    elif type(new_something) == list:
-        for i, k in enumerate(new_something):
-            if type(k) == np.ndarray:
-                new_something[i] = k.tolist()
-            if type(k) == dict:
-                new_something[i] = numpy_to_native(k)
-            elif type(k) == list:
-                new_something[i] = numpy_to_native(k)
-    elif type(new_something) == set:
-        for k in new_something:
-            if type(k) == np.ndarray:
-                new_something.remove(k)
-                new_k = k.tolist()
-                new_something.add(new_k)
-            if type(k) == dict:
-                new_something.remove(k)
-                new_k = numpy_to_native(k)
-                new_something.add(new_k)
-            elif type(k) == list:
-                new_something.remove(k)
-                new_k = numpy_to_native(k)
-                new_something.add(new_k)
-    return new_something
-
-
-class CustomStringIO(StringIO):
     def write(self, data):
         _real_std_out.write(data)
-        # real_std_out.write("\n"+str(super(CustomStringIO, self).__dict__))
-        super(CustomStringIO, self).write(data)  # this is writing into BytesIO, so it might need `data.encode()`
-
-
-def get_time_string():
-    """Returns the timedate formatted in %Y_%m_%d_%H_%M_%S
-
-    Return
-    ------
-    str
-        Formatted timedate in descending order of significance
-    """
-    time_string = datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
-    return time_string
+        # real_std_out.write("\n"+str(super(CustomBytesIO, self).__dict__))
+        super(CustomBytesIO, self).write(data)  # this is writing into BytesIO, so it might need `data.encode()`
 
 
 def this_dir():
@@ -127,7 +57,7 @@ def cache_print(f, *args, **kwargs):
     """
     global _real_std_out
     _real_std_out = sys.stdout
-    sys.stdout = mystdout = CustomStringIO()
+    sys.stdout = mystdout = CustomBytesIO()
     ret = f(*args, **kwargs)
 
     sys.stdout = _real_std_out
@@ -200,12 +130,11 @@ class Butler:
     fig_files = ()
     data_files = ()
 
-    @staticmethod
-    def __call__(keywords=(),
+    def __call__(self, keywords=(),
                  keep_keywords=True,
                  setup_file="setup.json",
                  read_return=True,
-                 session_parent_dir=os.path.dirname(__file__),
+                 session_parent_dir=conf.experiment_directory,
                  output_variable_name="",
                  data_variables=(),
                  img_files=(),
@@ -218,7 +147,7 @@ class Butler:
         Parameters
         ----------
         keywords : str list or tuple
-            List of keywords whose lines will be extracted when printed
+        List of keywords whose lines will be extracted when printed
         keep_keywords : bool
             Whether to also save the keywords with the rest of the print line
         setup_file : str
@@ -547,7 +476,7 @@ class Butler:
         Butler.png_path = png_path
 
 
-butler = Butler()  # to make `from butler2 import butler` possible and to have its fields recognized by IDEs
+butler = Butler()  # to make `from butler import butler` possible and to have its fields recognized by IDEs
 """Butler collects and organizes experiment data into folders while the experiment is running.
 
 Parameters
@@ -642,7 +571,8 @@ if __name__ == "__main__":
             self.test_value3 = {"arm_name": {"current": [1, 2, 3, 4, 5, 6, 7, 8, 9]}}
             self.test_value4 = {"camera": {"point_cloud": "pointcloud.png"}}
 
-        @butler(keywords="[INFO]", data_variables=("self.test_value2", "self.test_value3", "self.test_value4"), create_new_exp_on_run=True)
+        @butler(keywords="[INFO]", data_variables=("self.test_value2", "self.test_value3", "self.test_value4"),
+                create_new_exp_on_run=True, setup_file=r"C:\Users\jhart\PycharmProjects\butler\setup.json")
         def multiply(self, a, b):
             _meas = PropertyMeasurement("elasticity", "continuous", {"mean": 500000, "std": 100000},
                                         grasp={"position": [0.1, 0.2, 0.3], "rotation": [0.5, 0.9, 0.7], "grasped": True},
@@ -658,7 +588,7 @@ if __name__ == "__main__":
             return _meas, a * b
 
         @butler(keywords="[INFO]", keep_keywords=False, data_variables=("self.test_value2", "self.test_value4", ),
-                create_new_exp_on_run=True)
+                create_new_exp_on_run=True, setup_file=r"C:\Users\jhart\PycharmProjects\butler\setup.json")
         def divide(self, a, b):
             _meas = PropertyMeasurement(property_name="object_category",
                                         measurement_type="categorical",
@@ -674,20 +604,20 @@ if __name__ == "__main__":
             Butler.add_object_context({"common_name": "yellow_sponge"}, override_recommendation=False)
 
             # TODO: DICT which maps input files to final output files: {sensor_output_file_path: .../data/banana.png}
-            Butler.add_tmp_files("/tests/banana300.png", "data", "pointcloud.png")
-            Butler.add_measurement_png("../tests/banana300.png")
+            Butler.add_tmp_files(r"C:\Users\jhart\PycharmProjects\butler\tests\banana300.png", "data", "pointcloud.png")
+            Butler.add_measurement_png(r"C:\Users\jhart\PycharmProjects\butler\tests\banana300.png")
             return _meas, a / b
 
 
-    import shutil
-    for _ in os.listdir(this_dir()):
-        if os.path.isdir(_):
+    for _ in os.listdir(conf.experiment_directory):
+        tmp_dir = os.path.join(conf.experiment_directory, _)
+        if os.path.isdir(tmp_dir):
             rematch = re.findall(pattern=r"experiment_\d", string=_)
             if len(rematch) == 1:
-                shutil.rmtree(_)
+                shutil.rmtree(tmp_dir)
     # print(os.listdir(this_dir()))
     all_vars = dir()
     bc = TestClass()
     # c = bc.multiply(39, 20)
     d = bc.divide(40, 20)
-    print(eval("__file__"))
+    # print(eval("__file__"))
