@@ -441,13 +441,20 @@ class Butler:
         """
         assert tmp_file_folder in {"data", "figs", "imgs"}, "folder has to be one of {\"data\", \"figs\", \"imgs\"}"
         if target_names is not None and type(target_names) != str and type(file_paths) != str:
-            assert len(target_names) == file_paths, "`target_names` has to be the same length as the source `file_paths`"
+            assert len(target_names) == len(file_paths), "`target_names` has to be the same length as the source `file_paths`"
+
         valid_file_paths = file_paths
         if type(valid_file_paths) not in {list, tuple}:
             valid_file_paths = (valid_file_paths, )
-        valid_target_names = target_names
+
+        # defaults to the actual file name
+        if target_names is None:
+            valid_target_names = list(map(os.path.basename, valid_file_paths))
+        else:
+            valid_target_names = target_names
         if type(valid_target_names) not in {list, tuple}:
             valid_target_names = (valid_target_names, )
+
         if tmp_file_folder == "data":
             Butler.tmp_data_files = valid_file_paths
             Butler.tmp_data_target_names = valid_target_names
