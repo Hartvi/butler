@@ -16,6 +16,26 @@ __all__ = ["PropertyMeasurement", "butler"]
 _real_std_out = None  # type: BytesIO
 
 
+def format_data_variables(data_vars):
+    ret = dict()
+    for v in data_vars:  # {"sensor": {"quantity": values}}
+        for s in v:  # "sensor"
+            sensor_is_used = False
+            for q in v[s]:  # "quantity"
+                used_sum = 0
+                if v[s][q] is not None:
+                    used_sum += 1
+                try:
+                    if len(v[s][q]) != 0:
+                        used_sum += 1
+                except:
+                    pass
+                if used_sum > 1:
+                    sensor_is_used = True
+            if sensor_is_used:
+                ret[s] = v[s]
+    return ret
+
 
 class CustomBytesIO(BytesIO):
     """BytesIO pipe that copies all prints into itself
