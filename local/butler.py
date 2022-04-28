@@ -183,13 +183,24 @@ class Butler:
 
 
         """
-        assert type(output_variable_name) == str, "measured object variable name must be string! & Only one per function"
+        assert type(output_variable_name) == str,"measured object variable name must be string! & Only one per function"
 
         assert type(keywords) == str or type(keywords) == list or type(keywords) == tuple, \
             "keywords must be of type str or list[str]"
-        self.fig_files = fig_files
+
+        self.keywords = keywords
+        self.keep_keywords = keep_keywords
+        self.setup_file = setup_file
+        self.read_return = read_return
+        self.session_parent_dir = session_parent_dir
+        self.output_variable_name = output_variable_name
+        self.data_variables = data_variables
         self.img_files = img_files
+        self.fig_files = fig_files
         self.data_files = data_files
+        self.ignore_colours = ignore_colours
+        self.create_new_exp_on_run = create_new_exp_on_run
+
         try:
             with open(setup_file, "r") as fp:
                 self.setup = json.load(fp)
@@ -208,18 +219,6 @@ class Butler:
         if self.session_paths is None and not create_new_exp_on_run:
             self.session_paths = self._create_directory_tree_for_session()
 
-        self.keywords = keywords
-        self.keep_keywords = keep_keywords
-        self.setup_file = setup_file
-        self.read_return = read_return
-        self.session_parent_dir = session_parent_dir
-        self.output_variable_name = output_variable_name
-        self.data_variables = data_variables
-        self.img_files = img_files
-        self.fig_files = fig_files
-        self.data_files = data_files
-        self.ignore_colours = ignore_colours
-        self.create_new_exp_on_run = create_new_exp_on_run
 
     def __call__(self, f):
 
@@ -544,7 +543,8 @@ class PropertyMeasurement:
         self.other = other
         self.other_file = other_file
         for k in kwargs:
-            exec("self."+k+"="+str(kwargs[k]))
+            # print(k, "=", str(kwargs[k]))
+            exec("self."+k+"="+str(("\""+kwargs[k]+"\"") if isinstance(kwargs[k], str) else kwargs[k]))
 
     def __repr__(self):
         rep = ""
@@ -590,6 +590,7 @@ if __name__ == "__main__":
             self.test_value2 = {"gripper_name": {"values": [9, 8, 7, 6, 5, 6, 7, 8, 9]}}
             self.test_value3 = {"arm_name": {"current": [1, 2, 3, 4, 5, 6, 7, 8, 9]}}
             self.test_value4 = {"camera": {"point_cloud": "pointcloud.png"}}
+            self.data_variables = {}
 
         @Butler(keywords="[INFO]", data_variables=("self.test_value2", "self.test_value3", "self.test_value4"),
                 create_new_exp_on_run=True, setup_file=r"C:\Users\jhart\PycharmProjects\butler\setup.json")
@@ -607,12 +608,12 @@ if __name__ == "__main__":
             Butler.add_object_context({"maker": "coca_cola"}, override_recommendation=False)
             return _meas, a * b
 
-        @Butler(keywords="[INFO]", keep_keywords=False, data_variables=("self.test_value2", "self.test_value4", ),
+        @Butler(keywords="[INFO]", keep_keywords=False, data_variables=("self.data_variables", ),
                 create_new_exp_on_run=True, setup_file=r"C:\Users\jhart\PycharmProjects\butler\setup.json")
         def divide(self, a, b):
-            _meas = PropertyMeasurement(property_name="object_category",
-                                        measurement_type="categorical",
-                                        parameters={"cat1": 0.5, "cat2": 0.3, "cat3": 0.2},
+            _meas = PropertyMeasurement(meas_prop="object_category",
+                                        meas_type="continuous",  # "categorical",
+                                        params={"mean": 20.2, "std": 5.1},  # {"cat1": 0.5, "cat2": 0.3, "cat3": 0.2},
                                         meas_ID=6)
             print("this should only be in the top log")
             print("[INFO] divide baby [INFO]")
@@ -623,6 +624,10 @@ if __name__ == "__main__":
             # print(dir())
             Butler.add_object_context({"common_name": "yellow_sponge"}, override_recommendation=False)
             # TODO: DICT which maps input files to final output files: {sensor_output_file_path: .../data/banana.png}
+            for k in self.test_value4:
+                self.data_variables[k] = self.test_value4[k]
+            for k in self.test_value1:
+                self.data_variables[k] = self.test_value1[k]
             Butler.add_tmp_files(r"C:\Users\jhart\PycharmProjects\butler\tests\banana300.png", "data", "pointcloud.png")
             Butler.add_measurement_png(r"C:\Users\jhart\PycharmProjects\butler\tests\banana300.png")
 

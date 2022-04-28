@@ -12,7 +12,7 @@ import conf
 file_dirs = ("data", "figs", "imgs")
 
 
-def get_regex(d, pattern):
+def get_regex(d, pattern, filter_out_nones=True):
     """Get a value from a dictionary `d` based on the regex key `pattern`. NOTE: Takes the shortest matching key.
 
     Parameters
@@ -21,11 +21,15 @@ def get_regex(d, pattern):
         The dict.
     pattern : str
         Any regex. E.g. r".*property.*" = any string containing "property"
+    filter_out_nones : bool
+        Whether to filter out all keys that correspond to `None` values
 
     """
     dk = d.keys()
     # a list of keys that match the regex
     key_arr = filter(lambda x: len(re.findall(pattern=pattern, string=x)) != 0, dk)
+    if filter_out_nones:
+        key_arr = filter(lambda x: d[x] is not None, key_arr)
     # sorted from shortest to longest
     ret_arr = sorted(key_arr, key=lambda y: len(y))
     if len(ret_arr) == 0:

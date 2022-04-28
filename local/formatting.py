@@ -1,4 +1,6 @@
 from __future__ import print_function, division
+
+import copy
 import os
 import json
 import re
@@ -6,11 +8,42 @@ import re
 from os.path import join
 
 from local import conf
-from utils import file_dirs
+from utils import file_dirs, get_regex
 
 
 _experiment_ignored_names = r"(.*\..*)|(timestamp.*)"  # |(?!(.*\.json))
 _property_ignored_names = r"(log.txt)|(figs)|(imgs)"
+
+mean_pattern = r".*(mean)|(value)|(av(era)?g(e)?).*"
+std_pattern = r".*(sigma)|(std).*"
+param_pattern = r".*param.*"
+meas_type_pattern = r".*meas(urement)?_type.*"
+meas_prop_pattern = r".*(meas(urement)?_prop)|(prop(erty)?(_name)?).*"
+repo_pattern = r".*(repo(sitory)?)|(algo(rithm)?).*"  # i know it's superfluous to add the (.+)? parts
+units_pattern = r".*unit.*"
+value_pattern = r"(value(s)?)|(sensor)?(_outputs)?).*"
+
+def standardize_key(d, pattern, target_key, changeflag=False):  # 1 to 1 or N to 1 depending on the regex: ()|()...
+    ret = dict()
+    changed = False
+    for k in d:  # iterate through keys
+        if len(re.findall(pattern=pattern, string=k)) > 0:
+            new_val = copy.deepcopy(d[k])
+            ret[target_key] = new_val
+            changed = True
+        else:
+            ret[k] = copy.deepcopy(d[k])
+    if changeflag:
+        return ret, changed
+    else:
+        return ret
+
+
+def standardize_keys_from_dict(d, patterns_dict):
+    new_d = d
+    for target in patterns_dict:
+        new_d = standardize_key(d=new_d, pattern=patterns_dict[target], target_key=target)
+    return new_d
 
 
 def _data_dicts_to_sensor_outputs(sensor_outputs, data_dict, setup_dict, prop_dir):
@@ -65,21 +98,25 @@ def _data_dicts_to_sensor_outputs(sensor_outputs, data_dict, setup_dict, prop_di
 
 
 def _make_one_entry(parameters, entry_value, measurement_object_json):
-    entry_value["std"] = parameters["std"]
-    entry_value["mean"] = parameters["mean"]
+    std = get_regex(parameters, std_pattern, filter_out_nones=True)
+    mean = get_regex(parameters, mean_pattern, filter_out_nones=True)
+    entry_value["std"] = std
+    entry_value["mean"] = mean
     units = None
-    meas_units = measurement_object_json["units"]
+    meas_units = get_regex(measurement_object_json, units_pattern)
+    param_units = get_regex(parameters, units_pattern)
     if meas_units:
         units = meas_units
-    elif "units" in parameters:
-        units = parameters["units"]
+    elif param_units is not None:
+        units = param_units
     entry_value["units"] = units
     property_name = None
-    meas_property_name = measurement_object_json["property_name"]
-    if meas_property_name:
+    meas_property_name = get_regex(measurement_object_json, meas_prop_pattern, filter_out_nones=True)  # measurement_object_json["property_name"]
+    param_prop_name = get_regex(parameters, meas_prop_pattern)
+    if meas_property_name is not None:
         property_name = meas_property_name
-    elif "property_name" in parameters:
-        property_name = parameters["property_name"]
+    elif param_prop_name is not None:
+        property_name = param_prop_name
     entry_value["name"] = property_name
 
 
@@ -114,16 +151,7 @@ def experiment_to_json(experiment_directory, out_file=None):
     for prop_dir in valid_dirs:
         abs_prop_dir = join(experiment_directory, prop_dir)
         valid_prop_dirs.append(abs_prop_dir)
-        # print(abs_prop_dir)
-        # sub_prop_dirs = os.listdir(abs_prop_dir)
-        # for _ in sub_prop_dirs:
-        #     matches = re.findall(pattern=_property_ignored_names, string=_)
-        #     if len(matches) == 0:
-        #         valid_prop_dirs.append(join(abs_prop_dir, _))
-    # print(valid_prop_dirs)
 
-    # prop_name = prop_dir.split("_")[0]
-    # print(prop_name)
     object_context_dict = None
     # print("valid_prop_dirs", valid_prop_dirs)
     for prop_dir in valid_prop_dirs:
@@ -160,11 +188,11 @@ def experiment_to_json(experiment_directory, out_file=None):
         entry_dict = dict()
         entry_dict["values"] = list()
         entry_values = entry_dict["values"]
-        measurement_type = measurement_object_dict["measurement_type"]  # ["continuous", "categorical"]
-        parameters = measurement_object_dict["parameters"]  # {"cat1": 0.1, "cat2": 0.5, "cat3": 0.4}
-        entry_dict["type"] = measurement_object_dict["measurement_type"]
-        entry_dict["name"] = measurement_object_dict["property_name"]
-        entry_dict["repository"] = measurement_object_dict["repository"]
+        measurement_type = get_regex(measurement_object_dict, meas_type_pattern)  # measurement_object_dict["measurement_type"]  # ["continuous", "categorical"]
+        parameters = get_regex(measurement_object_dict, param_pattern)  # measurement_object_dict["parameters"]  # {"cat1": 0.1, "cat2": 0.5, "cat3": 0.4}
+        entry_dict["type"] = get_regex(measurement_object_dict, meas_type_pattern)
+        entry_dict["name"] = get_regex(measurement_object_dict, meas_prop_pattern)
+        entry_dict["repository"] = get_regex(measurement_object_dict, repo_pattern)
         # care about prop.units, params[std, mean], prop_name
         if measurement_type == "continuous":
             # if measurement 1D {std, mean}, then just a single continuous distribution
