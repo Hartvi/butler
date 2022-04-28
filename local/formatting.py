@@ -18,10 +18,11 @@ mean_pattern = r".*(mean)|(value)|(av(era)?g(e)?).*"
 std_pattern = r".*(sigma)|(std).*"
 param_pattern = r".*param.*"
 meas_type_pattern = r".*meas(urement)?_type.*"
-meas_prop_pattern = r".*(meas(urement)?_prop)|(prop(erty)?(_name)?).*"
+meas_prop_pattern = r".*(meas(urement)?_prop)|(prop(erty)?(_name)?)|(name).*"
 repo_pattern = r".*(repo(sitory)?)|(algo(rithm)?).*"  # i know it's superfluous to add the (.+)? parts
 units_pattern = r".*unit.*"
-value_pattern = r"(value(s)?)|(sensor)?(_outputs)?).*"
+value_pattern = r"(value)|(sensor)|(output).*"
+
 
 def standardize_key(d, pattern, target_key, changeflag=False):  # 1 to 1 or N to 1 depending on the regex: ()|()...
     ret = dict()
@@ -53,7 +54,7 @@ def _data_dicts_to_sensor_outputs(sensor_outputs, data_dict, setup_dict, prop_di
     # elif type(data_dict) != list:
     #     raise TypeError("data_dict isn't a Union[dict, list]: " + str(data_dict))
     # print(sensor_outputs)
-    # print("data_dict", data_dict)
+    print("data_dict", data_dict)
     for sn in data_dict:  # sn = sensor name
         # if the user entered the sensor name: ok; else if the type of sensor: convert to sensor name
         # e.g. `gripper: robotiq 2f85` : it ends up being "robotiq 2f85" even if the user enters "gripper" as the source
@@ -113,9 +114,10 @@ def _make_one_entry(parameters, entry_value, measurement_object_json):
     property_name = None
     meas_property_name = get_regex(measurement_object_json, meas_prop_pattern, filter_out_nones=True)  # measurement_object_json["property_name"]
     param_prop_name = get_regex(parameters, meas_prop_pattern)
+    print("param_prop_name", param_prop_name)
     if meas_property_name is not None:
         property_name = meas_property_name
-    elif param_prop_name is not None:
+    if param_prop_name is not None:
         property_name = param_prop_name
     entry_value["name"] = property_name
 
@@ -171,7 +173,8 @@ def experiment_to_json(experiment_directory, out_file=None):
         data_jsons = [_ for _ in data_dir_ls if (_ not in certain_files.values() and ".json" in _)]
 
         sensor_outputs = dict()
-        meas_values = measurement_object_dict["values"]
+
+        meas_values = get_regex(measurement_object_dict, value_pattern)  # ["values"]
 
         # print("experiment_directory: ", experiment_directory, "data_dir", prop_dir)
         if meas_values is not None:  # if `meas_object.values` is filled
@@ -196,7 +199,13 @@ def experiment_to_json(experiment_directory, out_file=None):
         # care about prop.units, params[std, mean], prop_name
         if measurement_type == "continuous":
             # if measurement 1D {std, mean}, then just a single continuous distribution
-            if len(set(parameters) & {"std", "mean"}) == 2:  # 1D
+            get_sum = 0
+            for pat in [mean_pattern, std_pattern]:
+                if get_regex(parameters, pat) is not None:
+                    get_sum += 1
+
+            # if len(set(parameters) & {"std", "mean"}) == 2:  # 1D
+            if get_sum == 2:
                 entry_value = dict()
                 entry_values.append(entry_value)
                 _make_one_entry(parameters, entry_value, measurement_object_dict)  # inplace change entry_value dict

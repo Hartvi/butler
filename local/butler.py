@@ -633,7 +633,7 @@ if __name__ == "__main__":
         def divide(self, a, b):
             _meas = PropertyMeasurement(meas_prop="object_category",
                                         meas_type="continuous",  # "categorical",
-                                        params={"mean": 20.2, "std": 5.1},  # {"cat1": 0.5, "cat2": 0.3, "cat3": 0.2},
+                                        params={"mean": 20.2, "std": 5.1, "units": "kg", "name": "x"},  # {"cat1": 0.5, "cat2": 0.3, "cat3": 0.2},
                                         meas_ID=6)
             print("this should only be in the top log")
             print("[INFO] divide baby [INFO]")
