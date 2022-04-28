@@ -5,13 +5,48 @@ from datetime import datetime
 import json
 from copy import deepcopy
 import numpy as np
+import re
 
 import conf
 
 file_dirs = ("data", "figs", "imgs")
 
 
+def get_regex(d, pattern):
+    """Get a value from a dictionary `d` based on the regex key `pattern`. NOTE: Takes the shortest matching key.
+
+    Parameters
+    ----------
+    d : dict
+        The dict.
+    pattern : str
+        Any regex. E.g. r".*property.*" = any string containing "property"
+
+    """
+    dk = d.keys()
+    # a list of keys that match the regex
+    key_arr = filter(lambda x: len(re.findall(pattern=pattern, string=x)) != 0, dk)
+    # sorted from shortest to longest
+    ret_arr = sorted(key_arr, key=lambda y: len(y))
+    if len(ret_arr) == 0:
+        return None
+    ret_key = ret_arr[0]
+    return d[ret_key]
+
+
+# dd = {"lol": "1", "lo": 2, "nay": 3}
+# p = r"lo.*"
+# print(get_regex(dd, p))
+
 def get_all_experiment_dirs(directory=conf.experiment_directory):
+    """Returns all directories in `directory` that correspond to the format `experiment(_.*)x6`. E.g. experiment_2022_03_31_21_49_21.
+
+    Parameters
+    ----------
+    directory : str
+        The directory where the experiments are lcoated
+
+    """
     ls_exp_dir = os.listdir(directory)
     experiment_dirs = filter(lambda x: len(x.split("_")) == 7, ls_exp_dir)
     abs_experiment_dirs = list(map(lambda x: os.path.join(directory, x), experiment_dirs))

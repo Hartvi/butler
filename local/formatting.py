@@ -197,10 +197,14 @@ def experiment_to_json(experiment_directory, out_file=None):
             assert len({"rotation", "position", "grasped"} & set(grasp.keys())) == 3, \
                 "`grasp` dictionary must contain keys \"position\": xyz, \"rotation\": xyz, \"grasped\": bool"
         print("grasp", grasp)
+        object_pose = measurement_object_dict.get("object_pose")
+        if object_pose is not None:
+            assert len({"rotation", "position"} & set(object_pose.keys())) == 2, \
+                "`object_pose` dictionary must contain keys \"position\": xyz, \"rotation\": xyz"
+        print("object_pose", object_pose)
 
         print("data_dir:", prop_dir)
         potential_img_dir = join(data_dir, "img.png")
-
 
         print("entry_object", entry_dict)
 
@@ -217,6 +221,7 @@ def experiment_to_json(experiment_directory, out_file=None):
         measurement_dict["setup"] = setup_dict
         measurement_dict["sensor_outputs"] = sensor_outputs
         measurement_dict["grasp"] = grasp
+        measurement_dict["object_pose"] = object_pose
         request_dict["entry"] = entry_dict
         # print("\nrequest_dict: ", request_dict, "\n")
         with open(out_file, "w") as fp:

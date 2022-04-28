@@ -25,6 +25,8 @@ The crux of this project is the `@butler` decorator. Simply decorate a function 
 - rosbags need the actual *datatype + ROS*
 - this is just *json + internet*
 
+# 04/25
+- TODO: add the possibility to read sensor data from the MeasObject json as opposed to only reading it from extra JSONs per setup element
 
 ### 04/23
 - add timestamp in names

@@ -2,6 +2,7 @@ from __future__ import print_function, division
 
 import sys
 import os
+from os.path import join
 from io import BytesIO
 import json
 import numpy as np
@@ -129,8 +130,10 @@ class Butler:
     img_files = ()
     fig_files = ()
     data_files = ()
+    setup = None
 
-    def __call__(self, keywords=(),
+    def __init__(self,
+                 keywords=(),
                  keep_keywords=True,
                  setup_file="setup.json",
                  read_return=True,
@@ -142,6 +145,7 @@ class Butler:
                  data_files=(),
                  ignore_colours=True,
                  create_new_exp_on_run=False):
+
         """Butler collects and organizes experiment data into folders while the experiment is running.
 
         Parameters
@@ -183,12 +187,12 @@ class Butler:
 
         assert type(keywords) == str or type(keywords) == list or type(keywords) == tuple, \
             "keywords must be of type str or list[str]"
-        Butler.fig_files = fig_files
-        Butler.img_files = img_files
-        Butler.data_files = data_files
+        self.fig_files = fig_files
+        self.img_files = img_files
+        self.data_files = data_files
         try:
             with open(setup_file, "r") as fp:
-                Butler.setup = json.load(fp)
+                self.setup = json.load(fp)
         except IOError as e:
             raise IOError(
                 "\n1. setup.json is not located in session_parent_dir=" + session_parent_dir +
@@ -201,137 +205,147 @@ class Butler:
                 "\"microphone\":\"microphone_model_name\", "
                 "\"other:\" \"other_modalities\"}\n"
                 "Leave fields empty if you are not using them.")
-        if Butler.session_paths is None and not create_new_exp_on_run:
-            Butler.session_paths = Butler._create_directory_tree_for_session(parent_dir=session_parent_dir,
-                                                                             setup=Butler.setup)
+        if self.session_paths is None and not create_new_exp_on_run:
+            self.session_paths = self._create_directory_tree_for_session()
 
-        def decorated(f):
-            def wrapper(*args, **kwargs):
-                if create_new_exp_on_run:
-                    Butler.session_paths = Butler._create_directory_tree_for_session(parent_dir=session_parent_dir,
-                                                                                     setup=Butler.setup)
-                res, captured_std_out = cache_print(f, *args, **kwargs)
-                processed_std_out = captured_std_out
+        self.keywords = keywords
+        self.keep_keywords = keep_keywords
+        self.setup_file = setup_file
+        self.read_return = read_return
+        self.session_parent_dir = session_parent_dir
+        self.output_variable_name = output_variable_name
+        self.data_variables = data_variables
+        self.img_files = img_files
+        self.fig_files = fig_files
+        self.data_files = data_files
+        self.ignore_colours = ignore_colours
+        self.create_new_exp_on_run = create_new_exp_on_run
 
-                if ignore_colours:
-                    processed_std_out = re.sub(r"\033\[\d+(;\d+)?m", "", captured_std_out)
+    def __call__(self, f):
 
-                """general log"""
-                with open(Butler.session_paths["log"], "a") as fp:
-                    fp.write(processed_std_out)
+        def wrapper(*args, **kwargs):
+            if self.create_new_exp_on_run:
+                self.session_paths = self._create_directory_tree_for_session()
+            res, captured_std_out = cache_print(f, *args, **kwargs)
+            processed_std_out = captured_std_out
 
-                """single property logs, etc."""
-                """meas_prop, meas_type, params, values, meas_ID"""
+            if self.ignore_colours:
+                processed_std_out = re.sub(r"\033\[\d+(;\d+)?m", "", captured_std_out)
 
-                if read_return:
-                    if type(res) == tuple:
-                        output_variable = res[0]
-                    else:
-                        output_variable = res
+            """general log"""
+            with open(self.session_paths["log"], "a") as fp:
+                fp.write(processed_std_out)
+
+            """single property logs, etc."""
+            """meas_prop, meas_type, params, values, meas_ID"""
+
+            if self.read_return:
+                if type(res) == tuple:
+                    output_variable = res[0]
                 else:
-                    output_variable = eval(output_variable_name)
+                    output_variable = res
+            else:
+                output_variable = eval(self.output_variable_name)
 
-                if type(output_variable) == dict:
-                    new_measurement = output_variable
-                elif isinstance(output_variable, object):
-                    new_measurement = output_variable.__dict__
+            if type(output_variable) == dict:
+                new_measurement = output_variable
+            elif isinstance(output_variable, object):
+                new_measurement = output_variable.__dict__
+            else:
+                raise TypeError(
+                    "for return value or specified output_variable is not of type [dict, PropertyMeasurement]"
+                )
+
+            property_paths = self._create_property_entry(new_measurement)
+            folder_names = ['fig', 'img', 'data']
+
+            # save the provided tmp_files into the property's imgs/figs/data folders
+            for n in folder_names:
+                _files = eval("Butler."+n+"_files")
+                plural_n = n+("s" if len(n) == 3 else "")
+                property_path = property_paths[plural_n]
+                if len(_files) > 0:
+                    for _file in eval(n+"_files"):
+                        shutil.copy2(_file, property_path)
+
+                butler_tmp_n = "Butler.tmp_" + n
+                tmp_length = len(eval(butler_tmp_n+"_files"))  # e.g. tmp_img_files, tmp_data_files, tmp_fig_files
+                for i in range(tmp_length):
+                    print("target path:", join(property_path, eval(butler_tmp_n+"_target_names[i]")))
+                    target_path = join(property_path, eval(butler_tmp_n+"_target_names[i]"))
+                    butler_tmp_n_files = butler_tmp_n+"_files[i]"
+                    eval_butler_tmp_n_files = eval(butler_tmp_n_files)
+                    shutil.copy2(eval_butler_tmp_n_files, target_path)
+                    Butler.file_mappings[eval_butler_tmp_n_files] = target_path
+
+            if Butler.png_path is not None:
+                shutil.copy2(Butler.png_path, join(property_paths["data"], "img.png"))
+            Butler.png_path = None
+
+            # for some reason having this in a separate method doesn't register
+            Butler.tmp_data_files = ()
+            Butler.tmp_fig_files = ()
+            Butler.tmp_img_files = ()
+
+            # the prints containing `keywords` go into property_paths["log"]
+            property_log = property_paths["log"]
+
+            # data variables should know where they come from:
+            # data_vars = [{"var_name": {"setup_el_name": "values"}}]
+            data_variables_listified = self.data_variables
+            if type(self.data_variables) not in {np.ndarray, tuple, list}:
+                if type(self.data_variables) == str:
+                    data_variables_listified = (self.data_variables, )
                 else:
                     raise TypeError(
-                        "for return value or specified output_variable is not of type [dict, PropertyMeasurement]"
+                        "data_variables is not of type str: " +
+                        str(type(data_variables_listified))
                     )
+            for var_name in data_variables_listified:
+                new_v_name = var_name.replace("self.", "")
+                if "self." in var_name:
+                    # for class functions `func(self, arg1)` => args[0] = self
+                    data_variable = args[0].__dict__[new_v_name]
+                else:
+                    data_variable = eval(new_v_name)
+                with open(join(property_paths["data"], new_v_name + ".json"), "w") as fp:
+                    dump_numpy_proof(data_variable, fp)
+            object_context = Butler._pop_object_context()
+            if object_context:
+                with open(join(property_paths["data"], "object_context.json"), "w") as fp:
+                    dump_numpy_proof(object_context, fp)
 
-                property_paths = Butler._create_property_entry(Butler.session_paths["exp"], new_measurement)
-                folder_names = ['fig', 'img', 'data']
+            tmp_keywords = self.keywords
+            if type(self.keywords) == str:
+                tmp_keywords = (self.keywords, )
+            print_split = processed_std_out.split("\n")
+            butlered_lines = ""
+            for kwd in tmp_keywords:
+                for prnt in print_split:
+                    if kwd in prnt:
+                        if self.keep_keywords:
+                            butlered_lines += prnt + "\n"
+                        else:
+                            butlered_lines += prnt.replace(kwd, "") + "\n"
 
-                # save the provided tmp_files into the property's imgs/figs/data folders
-                for n in folder_names:
-                    _files = eval("Butler."+n+"_files")
-                    plural_n = n+("s" if len(n) == 3 else "")
-                    property_path = property_paths[plural_n]
-                    if len(_files) > 0:
-                        for _file in eval(n+"_files"):
-                            shutil.copy2(_file, property_path)
+            # butlered_lines goes to experiment_{}/meas_prop/log.txt
+            with open(property_log, "w") as fp:
+                fp.write(butlered_lines)
+            Butler.counter += 1
+            return res
 
-                    butler_tmp_n = "Butler.tmp_" + n
-                    tmp_length = len(eval(butler_tmp_n+"_files"))  # e.g. tmp_img_files, tmp_data_files, tmp_fig_files
-                    for i in range(tmp_length):
-                        print("target path:", os.path.join(property_path, eval(butler_tmp_n+"_target_names[i]")))
-                        target_path = os.path.join(property_path, eval(butler_tmp_n+"_target_names[i]"))
-                        butler_tmp_n_files = butler_tmp_n+"_files[i]"
-                        eval_butler_tmp_n_files = eval(butler_tmp_n_files)
-                        shutil.copy2(eval_butler_tmp_n_files, target_path)
-                        Butler.file_mappings[eval_butler_tmp_n_files] = target_path
+        return wrapper
 
-                if Butler.png_path is not None:
-                    shutil.copy2(Butler.png_path, os.path.join(property_paths["data"], "img.png"))
-                Butler.png_path = None
-
-                # for some reason having this in a separate method doesn't register
-                Butler.tmp_data_files = ()
-                Butler.tmp_fig_files = ()
-                Butler.tmp_img_files = ()
-
-                # the prints containing `keywords` go into property_paths["log"]
-                property_log = property_paths["log"]
-
-                # data variables should know where they come from:
-                # data_vars = [{"var_name": {"setup_el_name": "values"}}]
-                data_variables_listified = data_variables
-                if type(data_variables) not in {np.ndarray, tuple, list}:
-                    if type(data_variables) == dict:
-                        data_variables_listified = (data_variables, )
-                    else:
-                        raise TypeError(
-                            "data_variables is not of type [iterable[dict], dict]: " +
-                            str(type(data_variables_listified))
-                        )
-                for var_name in data_variables_listified:
-                    new_v_name = var_name.replace("self.", "")
-                    if "self." in var_name:
-                        # for class functions `func(self, arg1)` => args[0] = self
-                        data_variable = args[0].__dict__[new_v_name]
-                    else:
-                        data_variable = eval(new_v_name)
-                    with open(os.path.join(property_paths["data"], new_v_name + ".json"), "w") as fp:
-                        dump_numpy_proof(data_variable, fp)
-                object_context = Butler._pop_object_context()
-                if object_context:
-                    with open(os.path.join(property_paths["data"], "object_context.json"), "w") as fp:
-                        dump_numpy_proof(object_context, fp)
-
-                tmp_keywords = keywords
-                if type(keywords) == str:
-                    tmp_keywords = (keywords, )
-                print_split = processed_std_out.split("\n")
-                butlered_lines = ""
-                for kwd in tmp_keywords:
-                    for prnt in print_split:
-                        if kwd in prnt:
-                            if keep_keywords:
-                                butlered_lines += prnt + "\n"
-                            else:
-                                butlered_lines += prnt.replace(kwd, "") + "\n"
-
-                # butlered_lines goes to experiment_{}/meas_prop/log.txt
-                with open(property_log, "w") as fp:
-                    fp.write(butlered_lines)
-                Butler.counter += 1
-                return res
-
-            return wrapper
-
-        return decorated
-
-    @staticmethod
-    def _create_directory_tree_for_session(parent_dir, setup):
+    def _create_directory_tree_for_session(self):
+        parent_dir, setup = self.session_parent_dir, self.setup
         existing_directories = os.listdir(os.path.dirname(__file__))
         # get the lowest unused number that isn't lower than any other number in this dir
 
         experiment_suffix = get_time_string()
-        new_exp_path = os.path.join(parent_dir, DirectoryStructure["name"].format(experiment_suffix))
-        new_log_path = os.path.join(new_exp_path, DirectoryStructure["structure"]["log"])
-        new_setup_json_path = os.path.join(new_exp_path, "setup.json")
-        new_time_stamp_path = os.path.join(new_exp_path,
+        new_exp_path = join(parent_dir, DirectoryStructure["name"].format(experiment_suffix))
+        new_log_path = join(new_exp_path, DirectoryStructure["structure"]["log"])
+        new_setup_json_path = join(new_exp_path, "setup.json")
+        new_time_stamp_path = join(new_exp_path,
                                            DirectoryStructure["structure"]["timestamp"].format(get_time_string()))
 
         # create dirs & files
@@ -348,12 +362,11 @@ class Butler:
         ret["setup"] = new_setup_json_path
         return ret
 
-    @staticmethod
-    def _create_property_entry(parent_dir, meas_dict):
-        j = os.path.join
+    def _create_property_entry(self, meas_dict):
+        exp_dir = self.session_paths["exp"]
         prop_struct = PropertyStructure["structure"]
 
-        ls_exp = os.listdir(parent_dir)
+        ls_exp = os.listdir(exp_dir)
         next_index = 0
         # print(meas_dict["meas_prop"])
         for n in ls_exp:
@@ -361,19 +374,19 @@ class Butler:
             if get_set(Butler.property_object_property_name, meas_dict) in n:  # "mass" in "mass_0"
                 next_index = max(next_index, int(n.split("_")[-1]) + 1)
 
-        new_prop_dir = j(parent_dir, get_set(Butler.property_object_property_name, meas_dict) + "_" + str(next_index))
-        imgs_dir = j(new_prop_dir, prop_struct["imgs"])
-        figs_dir = j(new_prop_dir, prop_struct["figs"])
-        data_dir = j(new_prop_dir, prop_struct["data"]["name"])
-        log_file = j(new_prop_dir, prop_struct["log"])
-        meas_file = j(data_dir, prop_struct["data"]["structure"]["meas"]["name"])
+        new_prop_dir = join(exp_dir, get_set(Butler.property_object_property_name, meas_dict) + "_" + str(next_index))
+        imgs_dir = join(new_prop_dir, prop_struct["imgs"])
+        figs_dir = join(new_prop_dir, prop_struct["figs"])
+        data_dir = join(new_prop_dir, prop_struct["data"]["name"])
+        log_file = join(new_prop_dir, prop_struct["log"])
+        meas_file = join(data_dir, prop_struct["data"]["structure"]["meas"]["name"])
         new_dirs = [new_prop_dir, imgs_dir, figs_dir, data_dir]
         new_files = [log_file, meas_file]
         for d in new_dirs:
             new_dir_name = d
             os.mkdir(new_dir_name)
         for f in new_files:
-            with open(f, "w") as f:
+            with open(f, "w") as f:  # touch
                 pass
         with open(meas_file, "w") as f:
             dump_numpy_proof(meas_dict, f)
@@ -483,7 +496,7 @@ class Butler:
         Butler.png_path = png_path
 
 
-butler = Butler()  # to make `from butler import butler` possible and to have its fields recognized by IDEs
+# butler = Butler()  # to make `from butler import butler` possible and to have its fields recognized by IDEs
 """Butler collects and organizes experiment data into folders while the experiment is running.
 
 Parameters
@@ -578,7 +591,7 @@ if __name__ == "__main__":
             self.test_value3 = {"arm_name": {"current": [1, 2, 3, 4, 5, 6, 7, 8, 9]}}
             self.test_value4 = {"camera": {"point_cloud": "pointcloud.png"}}
 
-        @butler(keywords="[INFO]", data_variables=("self.test_value2", "self.test_value3", "self.test_value4"),
+        @Butler(keywords="[INFO]", data_variables=("self.test_value2", "self.test_value3", "self.test_value4"),
                 create_new_exp_on_run=True, setup_file=r"C:\Users\jhart\PycharmProjects\butler\setup.json")
         def multiply(self, a, b):
             _meas = PropertyMeasurement("elasticity", "continuous", {"mean": 500000, "std": 100000},
@@ -594,7 +607,7 @@ if __name__ == "__main__":
             Butler.add_object_context({"maker": "coca_cola"}, override_recommendation=False)
             return _meas, a * b
 
-        @butler(keywords="[INFO]", keep_keywords=False, data_variables=("self.test_value2", "self.test_value4", ),
+        @Butler(keywords="[INFO]", keep_keywords=False, data_variables=("self.test_value2", "self.test_value4", ),
                 create_new_exp_on_run=True, setup_file=r"C:\Users\jhart\PycharmProjects\butler\setup.json")
         def divide(self, a, b):
             _meas = PropertyMeasurement(property_name="object_category",
@@ -609,15 +622,17 @@ if __name__ == "__main__":
             print("result: ", a / b)
             # print(dir())
             Butler.add_object_context({"common_name": "yellow_sponge"}, override_recommendation=False)
-
             # TODO: DICT which maps input files to final output files: {sensor_output_file_path: .../data/banana.png}
             Butler.add_tmp_files(r"C:\Users\jhart\PycharmProjects\butler\tests\banana300.png", "data", "pointcloud.png")
             Butler.add_measurement_png(r"C:\Users\jhart\PycharmProjects\butler\tests\banana300.png")
+
+            _meas.grasp = {"position": [0.1, 0.2, 0.3], "rotation": [0.5, 0.8, 3.14], "grasped": True}
+            _meas.object_pose = {"position": [0.3, 0.2, 0.1], "rotation": [3.0, 0.8, 3.14]}
             return _meas, a / b
 
 
     for _ in os.listdir(conf.experiment_directory):
-        tmp_dir = os.path.join(conf.experiment_directory, _)
+        tmp_dir = join(conf.experiment_directory, _)
         if os.path.isdir(tmp_dir):
             rematch = re.findall(pattern=r"experiment_\d", string=_)
             if len(rematch) == 1:
