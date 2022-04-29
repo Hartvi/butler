@@ -7,7 +7,7 @@ import re
 
 from os.path import join
 
-from local import conf
+import config
 from utils import file_dirs, get_regex
 
 
@@ -128,7 +128,7 @@ def experiment_to_json(experiment_directory, out_file=None):
     Parameters
     ----------
     experiment_directory : str
-        The experiment{i} directory containing the directory structure as specified in butler.py
+        The experiment{i} directory containing the directory structure as specified in logger.py
     out_file : str or None
         Absolute path to the output file. "*.json" to write to the output file, None to not write to a file.
 
@@ -139,7 +139,7 @@ def experiment_to_json(experiment_directory, out_file=None):
     """
     if out_file is None:
         out_file = "upload_dict_"+"_".join(experiment_directory.split("_")[-6:]) + ".json"
-        out_file = os.path.abspath(os.path.join(conf.upload_dicts_directory, out_file))
+        out_file = os.path.abspath(os.path.join(config.upload_dicts_directory, out_file))
     prop_dirs = os.listdir(experiment_directory)
     valid_dirs = list()
     for _ in prop_dirs:

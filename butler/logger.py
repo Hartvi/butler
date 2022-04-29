@@ -10,9 +10,9 @@ import re
 import shutil
 
 from utils import dump_numpy_proof, get_time_string
-import conf
+import config
 
-__all__ = ["PropertyMeasurement", "butler"]
+# __all__ = ["PropertyMeasurement", "logger"]
 _real_std_out = None  # type: BytesIO
 
 
@@ -21,6 +21,8 @@ def format_data_variables(data_vars):
     for v in data_vars:  # {"sensor": {"quantity": values}}
         for s in v:  # "sensor"
             sensor_is_used = False
+            if v[s] is None:
+                continue
             for q in v[s]:  # "quantity"
                 used_sum = 0
                 if v[s][q] is not None:
@@ -132,6 +134,43 @@ def get_set(the_set, the_dict):
 
 
 class Butler:
+    """Butler collects and organizes experiment data into folders while the experiment is running.
+
+    Parameters
+    ----------
+    keywords : str list or tuple
+    List of keywords whose lines will be extracted when printed
+    keep_keywords : bool
+        Whether to also save the keywords with the rest of the print line
+    setup_file : str
+        Path to the json containing the setup mappings. E.g. {"gripper": "robotiq 2f85", ...}
+    read_return : bool
+        Whether to take the return value (or first element in return tuple) as the measurement output. When False, see `outpu_bariable_name` parameter.
+    session_parent_dir : str
+        Directory where to save the experiments; default is the logger.py directory
+    output_variable_name : str
+        The string name of the variable that contains the data that is otherwise returned by the decorated function. Has to be visible in the scope where the decorated function is called. E.g. `self.data_var` or `just_data_var`.
+    data_variables : list or tuple or str or dict[str, list or tuple or np.ndarray or str]
+        Sensor output variables. Format: {"source_sensor_name": {"quantity (e.g. postiion)": [list, of, values], ...}, ...}
+    img_files : list[str] or tuple[str]
+        List of file paths that will be copied to `experiment_i/property_j/imgs` every time the function is run.
+    fig_files : list[str] or tuple[str]
+        List of file paths that will be copied to `experiment_i/property_j/figs` every time the function is run.
+    data_files : list[str] or tuple[str]
+        List of file paths that will be copied to `experiment_i/property_j/data` every time the function is run.
+    ignore_colours : bool
+        Whether to ignore the special colour characters; in regex: "\033\[\d+(;\d+)?m"
+    create_new_exp_on_run : bool
+        Whether to create a new experiment_i folder on every run of the function.
+
+
+    Additional parameters
+    ---------------------
+    Butler.add_object_context(context) - adds extra info about the measurement\n
+    Butler.add_tmp_files(files, destination) - adds `files` to be copied to `destination` folder
+
+
+    """
     session_exists = False
     session_paths = None
     property_setup = dict()
@@ -157,7 +196,7 @@ class Butler:
                  keep_keywords=True,
                  setup_file="setup.json",
                  read_return=True,
-                 session_parent_dir=conf.experiment_directory,
+                 session_parent_dir=config.experiment_directory,
                  output_variable_name="",
                  data_variables=(),
                  img_files=(),
@@ -179,7 +218,7 @@ class Butler:
         read_return : bool
             Whether to take the return value (or first element in return tuple) as the measurement output. When False, see `outpu_bariable_name` parameter.
         session_parent_dir : str
-            Directory where to save the experiments; default is the butler.py directory
+            Directory where to save the experiments; default is the logger.py directory
         output_variable_name : str
             The string name of the variable that contains the data that is otherwise returned by the decorated function. Has to be visible in the scope where the decorated function is called. E.g. `self.data_var` or `just_data_var`.
         data_variables : list or tuple or str or dict[str, list or tuple or np.ndarray or str]
@@ -529,7 +568,7 @@ setup_file : str
 read_return : bool
     Whether to take the return value (or first element in return tuple) as the measurement output. When False, see `outpu_bariable_name` parameter.
 session_parent_dir : str
-    Directory where to save the experiments; default is the butler.py directory
+    Directory where to save the experiments; default is the logger.py directory
 output_variable_name : str
     The string name of the variable that contains the data that is otherwise returned by the decorated function. Has to be visible in the scope where the decorated function is called. E.g. `self.data_var` or `just_data_var`.
 data_variables : dict[str, list or tuple or np.ndarray or str]
@@ -613,7 +652,7 @@ if __name__ == "__main__":
             self.data_variables = {}
 
         @Butler(keywords="[INFO]", data_variables=("self.test_value2", "self.test_value3", "self.test_value4"),
-                create_new_exp_on_run=True, setup_file=r"C:\Users\jhart\PycharmProjects\butler\setup.json")
+                create_new_exp_on_run=True, setup_file=r"../setup.json")
         def multiply(self, a, b):
             _meas = PropertyMeasurement("elasticity", "continuous", {"mean": 500000, "std": 100000},
                                         grasp={"position": [0.1, 0.2, 0.3], "rotation": [0.5, 0.9, 0.7], "grasped": True},
@@ -629,7 +668,7 @@ if __name__ == "__main__":
             return _meas, a * b
 
         @Butler(keywords="[INFO]", keep_keywords=False, data_variables=("self.data_variables", ),
-                create_new_exp_on_run=True, setup_file=r"C:\Users\jhart\PycharmProjects\butler\setup.json")
+                create_new_exp_on_run=True, setup_file=r"../setup.json")
         def divide(self, a, b):
             _meas = PropertyMeasurement(meas_prop="object_category",
                                         meas_type="continuous",  # "categorical",
@@ -648,16 +687,16 @@ if __name__ == "__main__":
                 self.data_variables[k] = self.test_value4[k]
             for k in self.test_value1:
                 self.data_variables[k] = self.test_value1[k]
-            Butler.add_tmp_files(r"C:\Users\jhart\PycharmProjects\butler\tests\banana300.png", "data", "pointcloud.png")
-            Butler.add_measurement_png(r"C:\Users\jhart\PycharmProjects\butler\tests\banana300.png")
+            Butler.add_tmp_files(r"../unused/tests/banana300.png", "data", "pointcloud.png")
+            Butler.add_measurement_png(r"../unused/tests/banana300.png")
 
             _meas.grasp = {"position": [0.1, 0.2, 0.3], "rotation": [0.5, 0.8, 3.14], "grasped": True}
             _meas.object_pose = {"position": [0.3, 0.2, 0.1], "rotation": [3.0, 0.8, 3.14]}
             return _meas, a / b
 
 
-    for _ in os.listdir(conf.experiment_directory):
-        tmp_dir = join(conf.experiment_directory, _)
+    for _ in os.listdir(config.experiment_directory):
+        tmp_dir = join(config.experiment_directory, _)
         if os.path.isdir(tmp_dir):
             rematch = re.findall(pattern=r"experiment_\d", string=_)
             if len(rematch) == 1:

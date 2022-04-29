@@ -1,4 +1,4 @@
-import formatting, uploader, conf, utils
+import formatting, utils
 
 if __name__ == "__main__":
     pass

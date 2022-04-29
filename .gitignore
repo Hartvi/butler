@@ -2,8 +2,8 @@
 .idea/
 exp_*
 experiment_*
-setups/*
-tests/
+unused/setups/*
+unused/tests/
 *.pyc
 *.json
 

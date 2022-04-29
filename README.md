@@ -21,6 +21,12 @@ The crux of this project is the `@butler` decorator. Simply decorate a function 
       modules
       ```
 
+local.butler
+local.uploader
+local.formatting
+local.utils
+local.conf
+
 # difference between ROSBAG & this
 - rosbags need the actual *datatype + ROS*
 - this is just *json + internet*

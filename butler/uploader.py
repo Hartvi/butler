@@ -118,14 +118,14 @@ def post_measurement(auth_tuple,
 if __name__ == "__main__":
     """
     print("\nuploader: butler:")
-    os.system("python C:/Users/jhart/PycharmProjects/butler/butler.py")
+    os.system("python C:/Users/jhart/PycharmProjects/butler/logger.py")
     print("\nuploader: steward:")
     os.system("python C:/Users/jhart/PycharmProjects/butler/steward.py")
     print("\nuploader: norach:")
     os.system("python C:/Users/jhart/PycharmProjects/butler/norach.py")
     """
 
-    dict_path = r"/tests/testy_json.json"
+    dict_path = r"../unused/tests/testy_json.json"
 
     print(
         post_measurement(auth_tuple=("jeff", "jeff"),

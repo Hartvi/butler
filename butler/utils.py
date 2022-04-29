@@ -7,7 +7,7 @@ from copy import deepcopy
 import numpy as np
 import re
 
-import conf
+import config
 
 file_dirs = ("data", "figs", "imgs")
 
@@ -20,7 +20,7 @@ def get_regex(d, pattern, filter_out_nones=True):
     d : dict
         The dict.
     pattern : str
-        Any regex. E.g. r".*property.*" = any string containing "property"
+        Any regex. E.g. `r".*property.*"` = any string containing `"property"`
     filter_out_nones : bool
         Whether to filter out all keys that correspond to `None` values
 
@@ -42,7 +42,7 @@ def get_regex(d, pattern, filter_out_nones=True):
 # p = r"lo.*"
 # print(get_regex(dd, p))
 
-def get_all_experiment_dirs(directory=conf.experiment_directory):
+def get_all_experiment_dirs(directory=config.experiment_directory):
     """Returns all directories in `directory` that correspond to the format `experiment(_.*)x6`. E.g. experiment_2022_03_31_21_49_21.
 
     Parameters
@@ -70,7 +70,7 @@ def get_time_string():
 
 
 def dump_numpy_proof(something, fp):
-    """A np.ndarray immune json.dump(sth, fp)
+    """A numpy.array immune json.dump
 
     Parameters
     ----------
