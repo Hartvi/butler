@@ -471,8 +471,16 @@ class Butler:
 
         """
         assert type(context) == dict, "object context must be in the format {key: value for (key, value) in key_values}"
+        
+        for i in range(len(context)):
+            for c in context:
+                if context[c] is None:
+                    del context[c]
+                    break
+        
         context_values = context.values()
         context_keys = context.keys()
+        
         assert sum(map(lambda x: type(x) == str, context_keys)) == \
                sum(map(lambda x: type(x) == str, context_values)) == len(context_values), \
                "context dictionary must have string keys and values: "+str(context)
@@ -484,6 +492,7 @@ class Butler:
                     ("dataset" in context and "dataset_id" in context)):
                 raise ValueError("Butler: It is recommended to set the object context as "
                       "\"maker\" or \"common_name\" or (\"dataset\"  (and \"dataset_id\" optional))")
+                blob/main/local/butler.py
         Butler.context.append(context)
 
     @staticmethod
