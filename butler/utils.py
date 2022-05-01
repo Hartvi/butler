@@ -10,6 +10,18 @@ import re
 import config
 
 file_dirs = ("data", "figs", "imgs")
+date_template = '%Y_%m_%d_%H_%M_%S'
+max_date = '9999_12_31_23_59_59'
+min_date = '0000_01_01_00_00_00'
+
+
+def update_json(p, update_dict):
+    with open(p, 'r+') as fp:
+        existing_dict = json.load(fp)
+        for c in update_dict:
+            existing_dict[c] = update_dict[c]
+        fp.seek(0)
+        json.dump(existing_dict, fp)
 
 
 def get_regex(d, pattern, filter_out_nones=True):
@@ -38,11 +50,37 @@ def get_regex(d, pattern, filter_out_nones=True):
     return d[ret_key]
 
 
+def get_recursive_regex(obj, pattern):
+    # print("obj: ", obj)
+    it = get_regex(obj, pattern)
+    if it is not None:
+        # print("returning:", it)
+        return it
+    for k, v in obj.items():
+        # print("checking: k,v: ", k, v)
+        if isinstance(v, dict):
+            item = get_recursive_regex(v, pattern)
+            if item is not None:
+                # print("returning:", it)
+                return item
+    return None
+
+
+def get_recursive(obj, key):
+    if key in obj:
+        return obj[key]
+    for k, v in obj.items():
+        if isinstance(v, dict):
+            item = get_recursive(v, key)
+            if item is not None:
+                return item
+
+
 # dd = {"lol": "1", "lo": 2, "nay": 3}
 # p = r"lo.*"
 # print(get_regex(dd, p))
 
-def get_all_experiment_dirs(directory=config.experiment_directory):
+def get_experiment_dirs(directory=config.experiment_directory, rule=None):
     """Returns all directories in `directory` that correspond to the format `experiment(_.*)x6`. E.g. experiment_2022_03_31_21_49_21.
 
     Parameters
@@ -53,7 +91,11 @@ def get_all_experiment_dirs(directory=config.experiment_directory):
     """
     ls_exp_dir = os.listdir(directory)
     experiment_dirs = filter(lambda x: len(x.split("_")) == 7, ls_exp_dir)
-    abs_experiment_dirs = list(map(lambda x: os.path.join(directory, x), experiment_dirs))
+    if rule is None:
+        ret_dirs = experiment_dirs
+    else:
+        ret_dirs = filter(rule, experiment_dirs)
+    abs_experiment_dirs = list(map(lambda x: os.path.join(directory, x), ret_dirs))
     return abs_experiment_dirs
 
 

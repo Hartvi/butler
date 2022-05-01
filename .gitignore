@@ -6,4 +6,6 @@ unused/setups/*
 unused/tests/
 *.pyc
 *.json
+*.txt
+unused/*
 

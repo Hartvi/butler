@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Welcome to Butler’s documentation! &mdash; Butler  documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="#" class="icon icon-home"> Butler
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">Welcome to Butler’s documentation!</a></li>
+<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">Butler</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="#" class="icon icon-home"></a> &raquo;</li>
+      <li>Welcome to Butler’s documentation!</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-butler">
+<span id="welcome-to-butler-s-documentation"></span><h1>Welcome to Butler’s documentation!<a class="headerlink" href="#module-butler" title="Permalink to this headline"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="butler.Butler">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">butler.</span></span><span class="sig-name descname"><span class="pre">Butler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">keywords</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keep_keywords</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">setup_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'setup.json'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">read_return</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">session_parent_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'C:\\Users\\jhart\\PycharmProjects\\butler\\butler\\experiments'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_variable_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_variables</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">img_files</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fig_files</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_files</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignore_colours</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">create_new_exp_on_run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#butler.Butler" title="Permalink to this definition"></a></dt>
+<dd><p>Butler collects and organizes experiment data into folders while the experiment is running.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>keywords</strong> (<em>str list</em><em> or </em><em>tuple</em>) – </p></li>
+<li><p><strong>printed</strong> (<em>List of keywords whose lines will be extracted when</em>) – </p></li>
+<li><p><strong>keep_keywords</strong> (<em>bool</em>) – Whether to also save the keywords with the rest of the print line</p></li>
+<li><p><strong>setup_file</strong> (<em>str</em>) – Path to the json containing the setup mappings. E.g. {“gripper”: “robotiq 2f85”, …}</p></li>
+<li><p><strong>read_return</strong> (<em>bool</em>) – Whether to take the return value (or first element in return tuple) as the measurement output. When False, see <cite>outpu_bariable_name</cite> parameter.</p></li>
+<li><p><strong>session_parent_dir</strong> (<em>str</em>) – Directory where to save the experiments; default is the butler.py directory</p></li>
+<li><p><strong>output_variable_name</strong> (<em>str</em>) – The string name of the variable that contains the data that is otherwise returned by the decorated function. Has to be visible in the scope where the decorated function is called. E.g. <cite>self.data_var</cite> or <cite>just_data_var</cite>.</p></li>
+<li><p><strong>data_variables</strong> (<em>list</em><em> or </em><em>tuple</em><em> or </em><em>str</em><em> or </em><em>dict</em><em>[</em><em>str</em><em>, </em><em>list</em><em> or </em><em>tuple</em><em> or </em><em>np.ndarray</em><em> or </em><em>str</em><em>]</em>) – Sensor output variables. Format: {“source_sensor_name”: {“quantity (e.g. postiion)”: [list, of, values], …}, …}</p></li>
+<li><p><strong>img_files</strong> (<em>list</em><em>[</em><em>str</em><em>] or </em><em>tuple</em><em>[</em><em>str</em><em>]</em>) – List of file paths that will be copied to <cite>experiment_i/property_j/imgs</cite> every time the function is run.</p></li>
+<li><p><strong>fig_files</strong> (<em>list</em><em>[</em><em>str</em><em>] or </em><em>tuple</em><em>[</em><em>str</em><em>]</em>) – List of file paths that will be copied to <cite>experiment_i/property_j/figs</cite> every time the function is run.</p></li>
+<li><p><strong>data_files</strong> (<em>list</em><em>[</em><em>str</em><em>] or </em><em>tuple</em><em>[</em><em>str</em><em>]</em>) – List of file paths that will be copied to <cite>experiment_i/property_j/data</cite> every time the function is run.</p></li>
+<li><p><strong>ignore_colours</strong> (<em>bool</em>) – Whether to ignore the special colour characters; in regex: “[d+(;d+)?m”</p></li>
+<li><p><strong>create_new_exp_on_run</strong> (<em>bool</em>) – Whether to create a new experiment_i folder on every run of the function.</p></li>
+</ul>
+</dd>
+</dl>
+<p>Butler.add_object_context(context) - adds extra info about the measurement</p>
+<p>Butler.add_tmp_files(files, destination) - adds <cite>files</cite> to be copied to <cite>destination</cite> folder</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="butler.Butler.add_measurement_png">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">add_measurement_png</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">png_path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#butler.Butler.add_measurement_png" title="Permalink to this definition"></a></dt>
+<dd><p>Adds the png image to be uploaded into the measurement[“png”] slot</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>png_path</strong> (<em>str</em>) – Path to the png file as it is on the disk.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="butler.Butler.add_object_context">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">add_object_context</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">context</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">override_recommendation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#butler.Butler.add_object_context" title="Permalink to this definition"></a></dt>
+<dd><p>Adds the object’s “maker”, “common_name”, “dataset”, “dataset_id” for one run of the function. Call <cite>Butler.add_object_context(context)</cite> inside the decorated funtion.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>context</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>str</em><em>]</em>) – The object context. Format: {“maker”: “ikea”, “common_name”: “hard_yellow_sponge”, “dataset”: “ycb”}. If “dataset_id” is present, “dataset” must also be present.</p></li>
+<li><p><strong>override_recommendation</strong> (<em>bool</em>) – Whether to remove the constraint that the context keys have to be one of [“maker”, “common_name”, “dataset”, “dataset_id”.]</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="butler.Butler.add_tmp_files">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">add_tmp_files</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_paths</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tmp_file_folder</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#butler.Butler.add_tmp_files" title="Permalink to this definition"></a></dt>
+<dd><p>Adds files to be copied to the folder: property_j/[data, imgs, figs] when the function decorated by <cite>&#64;butler</cite> is called.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>file_paths</strong> (<em>list</em><em>[</em><em>str</em><em>] or </em><em>str</em>) – The files to be copied to tmp_file_folder.</p></li>
+<li><p><strong>tmp_file_folder</strong> (<em>str</em>) – One of [“data”, “imgs”, “figs”]. The <cite>experiment_i/property_j</cite> subfolder into which the <cite>file_paths</cite> files are to be copied.</p></li>
+<li><p><strong>target_names</strong> (<em>list</em><em>[</em><em>str</em><em>] or </em><em>str</em>) – The names that the <cite>file_paths</cite> names will be copied into. E.g. file_paths=”/tmp/box.png”, target_names=”cheezit.png”</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="butler.CustomBytesIO">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">butler.</span></span><span class="sig-name descname"><span class="pre">CustomBytesIO</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">initial_bytes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">b''</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#butler.CustomBytesIO" title="Permalink to this definition"></a></dt>
+<dd><p>BytesIO pipe that copies all prints into itself</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="butler.CustomBytesIO.write">
+<span class="sig-name descname"><span class="pre">write</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#butler.CustomBytesIO.write" title="Permalink to this definition"></a></dt>
+<dd><p>Write bytes to file.</p>
+<p>Return the number of bytes written.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="butler.cache_print">
+<span class="sig-prename descclassname"><span class="pre">butler.</span></span><span class="sig-name descname"><span class="pre">cache_print</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">f</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#butler.cache_print" title="Permalink to this definition"></a></dt>
+<dd><p>Save the return value of function <cite>f</cite> &amp; its print outputs</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>f</strong> (<em>function</em>) – Function whose prints you want saved.</p></li>
+<li><p><strong>args</strong> (<em>any</em>) – Classical <a href="#id1"><span class="problematic" id="id2">*</span></a>args.</p></li>
+<li><p><strong>kwargs</strong> (<em>dict</em>) – Classical <a href="#id3"><span class="problematic" id="id4">**</span></a>kwargs.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>tuple of (function_return, stdout)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>tuple</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="butler.this_dir">
+<span class="sig-prename descclassname"><span class="pre">butler.</span></span><span class="sig-name descname"><span class="pre">this_dir</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#butler.this_dir" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the directory of the current python file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Current parent dir of this file</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<span class="target" id="module-formatting"></span><dl class="py function">
+<dt class="sig sig-object py" id="formatting.convert_experiments">
+<span class="sig-prename descclassname"><span class="pre">formatting.</span></span><span class="sig-name descname"><span class="pre">convert_experiments</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">interval</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'__all__'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#formatting.convert_experiments" title="Permalink to this definition"></a></dt>
+<dd><p>Format the experiments in the <cite>config.experiment_directory</cite> folder to dicts.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>interval</strong> (<em>str</em><em> or </em><em>list</em>) – <p>Date interval between which to convert the experiments.</p>
+<blockquote>
+<div><p>Values:</p>
+<p>”__all__”: all experiments - ok if you call this manually</p>
+<p>[a or None, b or None] - from <cite>a</cite> to <cite>b</cite> or all before <cite>b</cite> or all after <cite>a</cite>. Format: YYYY_mm_dd_HH_MM_SS</p>
+</div></blockquote>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="formatting.experiment_to_json">
+<span class="sig-prename descclassname"><span class="pre">formatting.</span></span><span class="sig-name descname"><span class="pre">experiment_to_json</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">experiment_directory</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#formatting.experiment_to_json" title="Permalink to this definition"></a></dt>
+<dd><p>Takes a butlered experiment folder and converts it into a dictionary that is in the format that will be uploaded to the server.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>experiment_directory</strong> (<em>str</em>) – The experiment{i} directory containing the directory structure as specified in butler.py</p></li>
+<li><p><strong>out_file</strong> (<em>str</em><em> or </em><em>None</em>) – Absolute path to the output file. “<a href="#id5"><span class="problematic" id="id6">*</span></a>.json” to write to the output file, None to not write to a file.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Returns the processed experiment in the form of a dict, which close to the final format for uploading.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<span class="target" id="module-uploading"></span><dl class="py function">
+<dt class="sig sig-object py" id="uploading.get_file_names">
+<span class="sig-prename descclassname"><span class="pre">uploading.</span></span><span class="sig-name descname"><span class="pre">get_file_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">formatted_dict</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#uploading.get_file_names" title="Permalink to this definition"></a></dt>
+<dd><p>Collects the file names to be uploaded to the server from the formatted dictionary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>formatted_dict</strong> (<em>dict</em>) – The dictionary as it is output by <cite>formatting.experiment_to_json</cite></p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><dl>
+<dt>A dictionary with:</dt><dd><p><cite>keys</cite>: Space-notation strings to where the files belong on the server. E.g. measurement.png / measurement[“png”] =&gt; “measurement png”.</p>
+<p><cite>values</cite>: Absolute file paths on the local machine.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="uploading.post_measurement">
+<span class="sig-prename descclassname"><span class="pre">uploading.</span></span><span class="sig-name descname"><span class="pre">post_measurement</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">auth_tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">endpoint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'http://127.0.0.1:8000/rest/'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dict_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#uploading.post_measurement" title="Permalink to this definition"></a></dt>
+<dd><p>This posts a measurement to <a class="reference external" href="http://endpoint/measurements/">http://endpoint/measurements/</a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>auth_tuple</strong> (<em>tuple</em><em>[</em><em>str</em><em>] or </em><em>list</em><em>[</em><em>str</em><em>]</em>) – The (user, pass) authentication tuple.</p></li>
+<li><p><strong>endpoint</strong> (<em>str</em>) – Basically the website name. Default is the localhost.</p></li>
+<li><p><strong>dict_path</strong> (<em>str</em>) – Path to the formatted dictionary.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="uploading.post_measurements">
+<span class="sig-prename descclassname"><span class="pre">uploading.</span></span><span class="sig-name descname"><span class="pre">post_measurements</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">auth_tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">endpoint</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dict_paths</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#uploading.post_measurements" title="Permalink to this definition"></a></dt>
+<dd><p>Posts posts measurements located in <cite>dict_paths</cite> and updates the <cite>config.uploaded_dicts_json</cite> file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>auth_tuple</strong> (<em>tuple</em><em>[</em><em>str</em><em>] or </em><em>list</em><em>[</em><em>str</em><em>]</em>) – The (user, pass) authentication tuple.</p></li>
+<li><p><strong>endpoint</strong> (<em>str</em>) – Basically the website name. Default is the localhost.</p></li>
+<li><p><strong>dict_paths</strong> (<em>list</em><em>[</em><em>str</em><em>]</em>) – Paths to the formatted dictionaries.</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em>) – Whether to print out the result of which dictionary was uploaded or not.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<span class="target" id="module-utils"></span><dl class="py function">
+<dt class="sig sig-object py" id="utils.dump_numpy_proof">
+<span class="sig-prename descclassname"><span class="pre">utils.</span></span><span class="sig-name descname"><span class="pre">dump_numpy_proof</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">something</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fp</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.dump_numpy_proof" title="Permalink to this definition"></a></dt>
+<dd><p>A numpy.array immune json.dump</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>something</strong> (<em>list</em><em> or </em><em>tuple of np.ndarray</em><em> or </em><em>dict</em><em> or </em><em>set</em>) – Object to convert to json.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="utils.get_experiment_dirs">
+<span class="sig-prename descclassname"><span class="pre">utils.</span></span><span class="sig-name descname"><span class="pre">get_experiment_dirs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">directory</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'C:\\Users\\jhart\\PycharmProjects\\butler\\butler\\experiments'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rule</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.get_experiment_dirs" title="Permalink to this definition"></a></dt>
+<dd><p>Returns all directories in <cite>directory</cite> that correspond to the format <cite>experiment(_.*)x6</cite>. E.g. experiment_2022_03_31_21_49_21.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>directory</strong> (<em>str</em>) – The directory where the experiments are lcoated</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="utils.get_regex">
+<span class="sig-prename descclassname"><span class="pre">utils.</span></span><span class="sig-name descname"><span class="pre">get_regex</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">d</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pattern</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_out_nones</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.get_regex" title="Permalink to this definition"></a></dt>
+<dd><p>Get a value from a dictionary <cite>d</cite> based on the regex key <cite>pattern</cite>. NOTE: Takes the shortest matching key.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>d</strong> (<em>dict</em>) – The dict.</p></li>
+<li><p><strong>pattern</strong> (<em>str</em>) – Any regex. E.g. <cite>r”.*property.*”</cite> = any string containing <cite>“property”</cite></p></li>
+<li><p><strong>filter_out_nones</strong> (<em>bool</em>) – Whether to filter out all keys that correspond to <cite>None</cite> values</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="utils.get_time_string">
+<span class="sig-prename descclassname"><span class="pre">utils.</span></span><span class="sig-name descname"><span class="pre">get_time_string</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#utils.get_time_string" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the timedate formatted in %Y_%m_%d_%H_%M_%S</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Formatted timedate in descending order of significance</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="utils.numpy_to_native">
+<span class="sig-prename descclassname"><span class="pre">utils.</span></span><span class="sig-name descname"><span class="pre">numpy_to_native</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">something</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inplace</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.numpy_to_native" title="Permalink to this definition"></a></dt>
+<dd><p>Recursively converts np.ndarrays to lists inside all combinations of nested lists, tuples, dicts, sets</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>something</strong> (<em>list</em><em> or </em><em>tuple</em><em> or </em><em>dict</em><em> or </em><em>set</em><em> or </em><em>np.ndarray</em>) – It has too many np.ndarrays.</p></li>
+<li><p><strong>inplace</strong> (<em>bool</em>) – Whether to overwrite the something in-place</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A denumpyified something</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list or tuple or dict or set</p>
+</dd>
+</dl>
+</dd></dl>
+
+<span class="target" id="module-config"></span><div class="toctree-wrapper compound">
+</div>
+</section>
+<section id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline"></a></h1>
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+</ul>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Jiri Hartvich.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

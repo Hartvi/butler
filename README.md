@@ -31,6 +31,10 @@ local.conf
 - rosbags need the actual *datatype + ROS*
 - this is just *json + internet*
 
+# 04/30
+- test uploading with as broken data as possible
+- check which requirements are necessary
+
 # 04/28
 - TODO: add **grasp and object pose** to kinova setup outputs to butler
 

@@ -4,11 +4,13 @@ import copy
 import os
 import json
 import re
+from datetime import datetime as dt
 
 from os.path import join
 
 import config
-from utils import file_dirs, get_regex
+from utils import file_dirs, get_regex, get_recursive_regex, get_experiment_dirs, date_template
+import utils
 
 
 _experiment_ignored_names = r"(.*\..*)|(timestamp.*)"  # |(?!(.*\.json))
@@ -22,6 +24,7 @@ meas_prop_pattern = r".*(meas(urement)?_prop)|(prop(erty)?(_name)?)|(name).*"
 repo_pattern = r".*(repo(sitory)?)|(algo(rithm)?).*"  # i know it's superfluous to add the (.+)? parts
 units_pattern = r".*unit.*"
 value_pattern = r"(value)|(sensor)|(output).*"
+pred_pattern = r".*(pred)|(out)|(est).*"
 
 
 def standardize_key(d, pattern, target_key, changeflag=False):  # 1 to 1 or N to 1 depending on the regex: ()|()...
@@ -63,13 +66,17 @@ def _data_dicts_to_sensor_outputs(sensor_outputs, data_dict, setup_dict, prop_di
         elif sn in setup_dict.values():
             data_source = sn
         else:
-            raise KeyError("data source/sensor `"+str(sn)+"` not specified in experiment_i/setup.json: "+str(setup_dict))
+            print(KeyError("data source/sensor `"+str(sn)+"` not specified in experiment_i/setup.json: "+str(setup_dict)))
+            continue
 
         data_values = data_dict[sn]
         print("data_values: ", data_values)
         print("sensor_outputs.keys()", sensor_outputs.keys())
         data_source_exists = data_source in sensor_outputs  # if a sensor has already been added to `sensor_outputs`
         sensor_output_keys = sensor_outputs[data_source].keys() if data_source_exists else list()
+        if data_values is None:
+            print("[WARN] sensor `"+str(sn)+"` has output `None`")
+            continue
         data_dict_keys = data_values.keys()  # the new arrivals - the keys that are about to be added
 
         # if a modality has already been added and one tries to add it again
@@ -77,8 +84,9 @@ def _data_dicts_to_sensor_outputs(sensor_outputs, data_dict, setup_dict, prop_di
         #   sensor_outputs = {"2f85" : {"time": [0.01, 0.02]}} AND data_dict = {"2f85": {"time": [3, 4, 5]}}
         #   it's ambiguous to add the modality `time` from `data_dict` to an already existing `time` in `sensor_outputs`
         if len(set(sensor_output_keys) & set(data_dict_keys)) != 0:
-            raise KeyError("source \"" + str(data_source) + "\" has colliding modalities: " +
-                           str(sensor_output_keys) + " VS " + str(data_dict_keys))
+            KeyError("KeyError: source \"" + str(data_source) + "\" has colliding modalities: " +
+                     str(sensor_output_keys) + " VS " + str(data_dict_keys))
+            continue
         # if sensor is registered, just append the values
         if data_source_exists:
             for modality in data_values:
@@ -128,7 +136,7 @@ def experiment_to_json(experiment_directory, out_file=None):
     Parameters
     ----------
     experiment_directory : str
-        The experiment{i} directory containing the directory structure as specified in logger.py
+        The experiment{i} directory containing the directory structure as specified in butler.py
     out_file : str or None
         Absolute path to the output file. "*.json" to write to the output file, None to not write to a file.
 
@@ -138,7 +146,7 @@ def experiment_to_json(experiment_directory, out_file=None):
         Returns the processed experiment in the form of a dict, which close to the final format for uploading.
     """
     if out_file is None:
-        out_file = "upload_dict_"+"_".join(experiment_directory.split("_")[-6:]) + ".json"
+        out_file = "upload_dict_"+"_".join(experiment_directory.split("_")[-6:])
         out_file = os.path.abspath(os.path.join(config.upload_dicts_directory, out_file))
     prop_dirs = os.listdir(experiment_directory)
     valid_dirs = list()
@@ -155,8 +163,9 @@ def experiment_to_json(experiment_directory, out_file=None):
         valid_prop_dirs.append(abs_prop_dir)
 
     object_context_dict = None
-    # print("valid_prop_dirs", valid_prop_dirs)
-    for prop_dir in valid_prop_dirs:
+    print("valid_prop_dirs", valid_prop_dirs)
+    for prop_dir, local_prop_name in zip(valid_prop_dirs, valid_dirs):
+        print("local prop dir: ", local_prop_name)
         data_dir = join(prop_dir, "data")
         certain_files = {"object_context": "object_context.json", "measurement": "measurement.json"}
         object_context_file = join(data_dir, certain_files["object_context"])
@@ -193,6 +202,7 @@ def experiment_to_json(experiment_directory, out_file=None):
         entry_values = entry_dict["values"]
         measurement_type = get_regex(measurement_object_dict, meas_type_pattern)  # measurement_object_dict["measurement_type"]  # ["continuous", "categorical"]
         parameters = get_regex(measurement_object_dict, param_pattern)  # measurement_object_dict["parameters"]  # {"cat1": 0.1, "cat2": 0.5, "cat3": 0.4}
+        print("parameters: ", parameters)
         entry_dict["type"] = get_regex(measurement_object_dict, meas_type_pattern)
         entry_dict["name"] = get_regex(measurement_object_dict, meas_prop_pattern)
         entry_dict["repository"] = get_regex(measurement_object_dict, repo_pattern)
@@ -218,26 +228,54 @@ def experiment_to_json(experiment_directory, out_file=None):
                     entry_values.append(entry_value)
                     _make_one_entry(parameters, entry_value, measurement_object_dict)
         elif measurement_type == "categorical":
-            cat_sum = sum(parameters.values())
+            entry_out = parameters
+            cat_sum = sum(entry_out.values())
+            print("category sum: ",cat_sum)
+            if abs(cat_sum - 1.0) > 0.01:
+                entry_out = get_recursive_regex(entry_out, pred_pattern)
+
+                print("meas_values", meas_values)
+                try:
+                    cat_sum = sum(meas_values.values())
+                except:
+                    pass
+                if abs(cat_sum - 1.0) > 0.01:
+                    if entry_out is None:
+                        entry_out = get_recursive_regex(meas_values, pred_pattern)
+                    if entry_out is None:
+                        raise KeyError("No name-value mapping found in entered parameters: "+str(parameters)+"\nRecursive search for keys with pattern `"+pred_pattern+"` also yielded no results.")
+                else:
+                    entry_out = meas_values
+            cat_sum = sum(entry_out.values())
             if abs(cat_sum - 1.0) > 0.01:
                 raise ValueError("Sum of categories' probabilities must be equal to one! Current sum: "+str(cat_sum))
             # normalize as closely to one as possible
-            parameters = {cat: parameters[cat] / cat_sum for cat in parameters}
-            for cat in parameters:
-                prop_el = {"name": cat, "probability": parameters[cat]}
+            entry_out = {cat: entry_out[cat] / cat_sum for cat in entry_out}
+            for cat in entry_out:
+                prop_el = {"name": cat, "probability": entry_out[cat]}
                 entry_values.append(prop_el)
             if entry_dict["name"] in {"stiffness", "elasticity", "size"}:
                 raise KeyError(str(entry_dict["name"])+" is not a categorical property")
 
         grasp = measurement_object_dict.get("grasp")
         if grasp is not None:
-            assert len({"rotation", "position", "grasped"} & set(grasp.keys())) == 3, \
-                "`grasp` dictionary must contain keys \"position\": xyz, \"rotation\": xyz, \"grasped\": bool"
+            assert len({"rotation", "position", "translation", "grasped"} & set(grasp.keys())) == 3, \
+                "`grasp` dictionary must contain keys `position/translation`: xyz, `rotation`: xyz, `grasped`: bool"
+            grasp["translation"] = grasp.pop("position")
         print("grasp", grasp)
+
+        gripper_pose = measurement_object_dict.get("gripper_pose")
+        if gripper_pose is not None:
+            assert len({"rotation", "position", "translation", "grasped"} & set(gripper_pose.keys())) == 3, \
+                "`gripper_pose` dictionary must contain keys `position/translation`: xyz, `rotation`: xyz, `grasped`: bool"
+            gripper_pose["translation"] = gripper_pose.pop("position")
+        print("gripper_pose", gripper_pose)
+
         object_pose = measurement_object_dict.get("object_pose")
         if object_pose is not None:
-            assert len({"rotation", "position"} & set(object_pose.keys())) == 2, \
-                "`object_pose` dictionary must contain keys \"position\": xyz, \"rotation\": xyz"
+            assert len({"rotation", "position", "translation"} & set(object_pose.keys())) == 2, \
+                "`object_pose` dictionary must contain keys `position/translation`: xyz, `rotation`: xyz"
+            object_pose["translation"] = object_pose.pop("position")
         print("object_pose", object_pose)
 
         print("data_dir:", prop_dir)
@@ -259,8 +297,56 @@ def experiment_to_json(experiment_directory, out_file=None):
         measurement_dict["sensor_outputs"] = sensor_outputs
         measurement_dict["grasp"] = grasp
         measurement_dict["object_pose"] = object_pose
+        measurement_dict["gripper_pose"] = gripper_pose
         request_dict["entry"] = entry_dict
         # print("\nrequest_dict: ", request_dict, "\n")
-        with open(out_file, "w") as fp:
+        with open(out_file + "_" + local_prop_name + ".json", "w") as fp:
             json.dump(fp=fp, obj=request_dict, indent=True)
-        return request_dict
+        # return request_dict
+
+
+def compare_interval(start, end):
+
+    def f(str_date):
+        x_strp_time = dt.strptime("_".join(str_date.split("_")[:-6]), date_template)
+        return start < x_strp_time < end
+
+    return f
+
+
+def convert_experiments(interval="__all__"):
+    """Format the experiments in the `config.experiment_directory` folder to dicts.
+
+    Parameters
+    ----------
+    interval : str or list
+        Date interval between which to convert the experiments. \n
+            Values:\n
+            "__all__": all experiments - ok if you call this manually\n
+            [a or None, b or None] - from `a` to `b` or all before `b` or all after `a`. Format: YYYY_mm_dd_HH_MM_SS
+    """
+    if interval == "__all__":
+        exp_dirs = get_experiment_dirs()
+    else:
+        assert isinstance(interval, list), "Legal values of interval are: "+'"__all__" and lists with elements in the '\
+                                                                            'date format: "'+str(date_template)+'" '
+        if len(interval) < 2:
+            interval.append(None)
+            interval.append(None)
+        if interval[0] is None:
+            start = dt.strptime(utils.min_date, date_template)
+        else:
+            start = dt.strptime(interval[0], date_template)
+        if interval[1] is None:
+            end = dt.strptime(utils.max_date, date_template)
+        else:
+            end = dt.strptime(interval[1], date_template)
+        assert start < end, "Start date must be older than end date: "+str(interval[0])+" vs "+str(interval[1])
+        exp_dirs = get_experiment_dirs(rule=compare_interval(start, end))
+    for exp_dir in exp_dirs:
+        experiment_to_json(exp_dir)
+
+    return exp_dirs
+
+
+

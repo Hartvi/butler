@@ -4,16 +4,16 @@ import requests
 import json
 import os
 
-import utils
+import utils, config
 
 
-def get_file_names(stewarded_dict):
-    """Collects the file names to be uploaded to the server from the "stewarded" dictionary.
+def get_file_names(formatted_dict):
+    """Collects the file names to be uploaded to the server from the formatted dictionary.
 
     Parameters
     ----------
-    stewarded_dict : dict
-        The dictionary as is output by `~steward.experiment_to_json`
+    formatted_dict : dict
+        The dictionary as it is output by `formatting.experiment_to_json`
 
     Returns
     -------
@@ -24,7 +24,7 @@ def get_file_names(stewarded_dict):
     """
     ret = dict()
     # sensor files:
-    measurement = stewarded_dict["measurement"]
+    measurement = formatted_dict["measurement"]
     sensor_outputs = measurement["sensor_outputs"]
     png = measurement.get("png")
     if png is not None:
@@ -64,7 +64,7 @@ def get_file_names(stewarded_dict):
         else:
             raise ValueError("object_instance.other_file: `" + str(object_instance_file) + "` is not a file!!")
 
-    entry = stewarded_dict["entry"]
+    entry = formatted_dict["entry"]
     values = entry["values"]
     for v in values:
         value_file = v.get("other_file")
@@ -80,7 +80,7 @@ def post_measurement(auth_tuple,
                      endpoint="http://127.0.0.1:8000/rest/",
                      dict_path=None,
                      ):
-    """This posts a measurement to http://localhost:8000/rest/measurements/
+    """This posts a measurement to http://endpoint/measurements/
 
     Parameters
     ----------
@@ -89,7 +89,7 @@ def post_measurement(auth_tuple,
     endpoint : str
         Basically the website name. Default is the localhost.
     dict_path : str
-        The dict in the format `str: json_str` {"measurement": "{"measurement": ..., "entry": ...}"}
+        Path to the formatted dictionary.
     """
 
     path = "measurements/"
@@ -106,26 +106,60 @@ def post_measurement(auth_tuple,
     for file_designation in file_paths:
         f = open(file_paths[file_designation], 'rb')
         file_bytes[file_designation] = f
+    print("data: ", data)
+    print("file_paths: ", file_paths)
     if file_paths is not None:
         req = requests.request(method, endpoint + path, auth=auth_tuple, data=data, files=file_bytes)
     else:
         req = requests.request(method, endpoint + path, data=data)
     for file_designation in file_bytes:
         file_bytes[file_designation].close()
-    return req.text
+    try:
+        json.loads(req.text)
+        utils.update_json(p=config.uploaded_dicts_json, update_dict={dict_path: True})
+        return True
+    except json.JSONDecodeError as e:
+        utils.update_json(p=config.uploaded_dicts_json, update_dict={dict_path: False})
+        return False
+    # return req.text
+
+
+def post_measurements(auth_tuple, endpoint, dict_paths, verbose=True):
+    """Posts posts measurements located in `dict_paths` and updates the `config.uploaded_dicts_json` file.
+
+    Parameters
+    ----------
+    auth_tuple : tuple[str] or list[str]
+        The (user, pass) authentication tuple.
+    endpoint : str
+        Basically the website name. Default is the localhost.
+    dict_paths : list[str]
+        Paths to the formatted dictionaries.
+    verbose : bool
+        Whether to print out the result of which dictionary was uploaded or not.
+
+    """
+    succeeded_status = dict()
+    for dict_path in dict_paths:
+        succ = post_measurement(auth_tuple=auth_tuple,
+                                endpoint=endpoint,
+                                dict_path=dict_path)
+        succeeded_status[dict_path] = succ
+    if verbose:
+        print(json.dumps(succeeded_status))
 
 
 if __name__ == "__main__":
     """
     print("\nuploader: butler:")
-    os.system("python C:/Users/jhart/PycharmProjects/butler/logger.py")
-    print("\nuploader: steward:")
-    os.system("python C:/Users/jhart/PycharmProjects/butler/steward.py")
-    print("\nuploader: norach:")
-    os.system("python C:/Users/jhart/PycharmProjects/butler/norach.py")
+    os.system("python C:/Users/jhart/PycharmProjects/butler/butler.py")
+    print("\nuploader: :")
+    os.system("python C:/Users/jhart/PycharmProjects/butler/formatting.py")
+    print("\nuploader: :")
+    os.system("python C:/Users/jhart/PycharmProjects/butler/uploading.py")
     """
 
-    dict_path = r"../unused/tests/testy_json.json"
+    dict_path = r"C:/Users/jhart/PycharmProjects/butler/butler/upload_dicts/upload_dict_2022_04_29_16_51_04_cat-vision_0.json"
 
     print(
         post_measurement(auth_tuple=("jeff", "jeff"),

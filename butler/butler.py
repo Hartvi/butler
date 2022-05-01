@@ -147,7 +147,7 @@ class Butler:
     read_return : bool
         Whether to take the return value (or first element in return tuple) as the measurement output. When False, see `outpu_bariable_name` parameter.
     session_parent_dir : str
-        Directory where to save the experiments; default is the logger.py directory
+        Directory where to save the experiments; default is the butler.py directory
     output_variable_name : str
         The string name of the variable that contains the data that is otherwise returned by the decorated function. Has to be visible in the scope where the decorated function is called. E.g. `self.data_var` or `just_data_var`.
     data_variables : list or tuple or str or dict[str, list or tuple or np.ndarray or str]
@@ -218,7 +218,7 @@ class Butler:
         read_return : bool
             Whether to take the return value (or first element in return tuple) as the measurement output. When False, see `outpu_bariable_name` parameter.
         session_parent_dir : str
-            Directory where to save the experiments; default is the logger.py directory
+            Directory where to save the experiments; default is the butler.py directory
         output_variable_name : str
             The string name of the variable that contains the data that is otherwise returned by the decorated function. Has to be visible in the scope where the decorated function is called. E.g. `self.data_var` or `just_data_var`.
         data_variables : list or tuple or str or dict[str, list or tuple or np.ndarray or str]
@@ -577,7 +577,7 @@ setup_file : str
 read_return : bool
     Whether to take the return value (or first element in return tuple) as the measurement output. When False, see `outpu_bariable_name` parameter.
 session_parent_dir : str
-    Directory where to save the experiments; default is the logger.py directory
+    Directory where to save the experiments; default is the butler.py directory
 output_variable_name : str
     The string name of the variable that contains the data that is otherwise returned by the decorated function. Has to be visible in the scope where the decorated function is called. E.g. `self.data_var` or `just_data_var`.
 data_variables : dict[str, list or tuple or np.ndarray or str]
