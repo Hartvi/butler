@@ -3,16 +3,6 @@ import os
 
 import utils
 
-# def change_object_contexts(context_dict, experiment_directory):
-#     experiment_sub_dirs = os.listdir(experiment_directory)
-#     for esd in experiment_sub_dirs:
-#         try:
-#             int(esd.split('_')[-1])
-#             object_context_path = os.path.join(experiment_directory, esd, 'data', 'object_context.json')
-#             update_json(object_context_path, context_dict)
-#         except:
-#             pass
-
 
 def change_experiment_jsons(update_dict, experiment_directory, json_file_name, rule):
     wlk = list(os.walk(experiment_directory))  # a, b, c; a=dir, b=subdirs, c=files

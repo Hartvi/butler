@@ -492,7 +492,6 @@ class Butler:
                     ("dataset" in context and "dataset_id" in context)):
                 raise ValueError("Butler: It is recommended to set the object context as "
                       "\"maker\" or \"common_name\" or (\"dataset\"  (and \"dataset_id\" optional))")
-                blob/main/local/butler.py
         Butler.context.append(context)
 
     @staticmethod
