@@ -31,6 +31,9 @@ local.conf
 - rosbags need the actual *datatype + ROS*
 - this is just *json + internet*
 
+# 05/03
+- add lazy post measurements
+
 # 04/30
 - test uploading with as broken data as possible
 - check which requirements are necessary

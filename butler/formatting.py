@@ -305,15 +305,6 @@ def experiment_to_json(experiment_directory, out_file=None):
         # return request_dict
 
 
-def compare_interval(start, end):
-
-    def f(str_date):
-        x_strp_time = dt.strptime("_".join(str_date.split("_")[:-6]), date_template)
-        return start < x_strp_time < end
-
-    return f
-
-
 def convert_experiments(interval="__all__"):
     """Format the experiments in the `config.experiment_directory` folder to dicts.
 
@@ -322,7 +313,7 @@ def convert_experiments(interval="__all__"):
     interval : str or list
         Date interval between which to convert the experiments. \n
             Values:\n
-            "__all__": all experiments - ok if you call this manually\n
+            "__all__": all experiments - ok if you call this manually and you dont have thousands of properties\n
             [a or None, b or None] - from `a` to `b` or all before `b` or all after `a`. Format: YYYY_mm_dd_HH_MM_SS
     """
     if interval == "__all__":
@@ -342,7 +333,7 @@ def convert_experiments(interval="__all__"):
         else:
             end = dt.strptime(interval[1], date_template)
         assert start < end, "Start date must be older than end date: "+str(interval[0])+" vs "+str(interval[1])
-        exp_dirs = get_experiment_dirs(rule=compare_interval(start, end))
+        exp_dirs = get_experiment_dirs(rule=utils.compare_interval("experiment_", start, end))
     for exp_dir in exp_dirs:
         experiment_to_json(exp_dir)
 

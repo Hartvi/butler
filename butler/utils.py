@@ -6,6 +6,7 @@ import json
 from copy import deepcopy
 import numpy as np
 import re
+from datetime import datetime as dt
 
 import config
 
@@ -15,13 +16,33 @@ max_date = '9999_12_31_23_59_59'
 min_date = '0000_01_01_00_00_00'
 
 
+def compare_interval(rm_str, start, end):
+
+    def f(str_date):
+        x_strp_time = dt.strptime("_".join(str_date.replace(rm_str, "").split("_")[:6]), date_template)
+        return start < x_strp_time < end
+
+    return f
+
+
 def update_json(p, update_dict):
     with open(p, 'r+') as fp:
         existing_dict = json.load(fp)
         for c in update_dict:
             existing_dict[c] = update_dict[c]
         fp.seek(0)
+        fp.truncate(0)
         json.dump(existing_dict, fp)
+
+
+def replace_json(p, update_dict):
+    with open(p, 'w') as fp:
+        # existing_dict = json.load(fp)
+        # for c in update_dict:
+        #     existing_dict[c] = update_dict[c]
+        fp.seek(0)
+        fp.truncate(0)
+        json.dump(update_dict, fp)
 
 
 def get_regex(d, pattern, filter_out_nones=True):

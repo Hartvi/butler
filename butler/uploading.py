@@ -130,7 +130,7 @@ def post_measurement(auth_tuple,
     # return req.text
 
 
-def post_measurements(auth_tuple, endpoint, dict_paths, upload_duplicates=False, upload_statuses=config.uploaded_dicts_json, verbose=True):
+def post_measurements(auth_tuple, endpoint, dict_paths, upload_statuses=config.uploaded_dicts_json, upload_duplicates=False):
     """Posts posts measurements located in `dict_paths` and updates the `config.uploaded_dicts_json` file.
 
     Parameters
@@ -145,9 +145,7 @@ def post_measurements(auth_tuple, endpoint, dict_paths, upload_duplicates=False,
         Whether to upload a name that has been flagged as `true` in `config.uploaded_dicts_json`
     upload_statuses : str
         Path to the dictionary with the upload statuses of the paths `dict_paths`.
-        E.g. "/home/meas_2022_02_02_property.json": true => already uploaded
-    verbose : bool
-        Whether to print out the result of which dictionary was uploaded or not.
+        E.g. "/home/meas_2022_02_02_property.json": true => already uploaded, don't upload
 
     """
     succeeded_status = dict()
@@ -156,14 +154,30 @@ def post_measurements(auth_tuple, endpoint, dict_paths, upload_duplicates=False,
         upload_statuses_dict = json.load(fp)
 
     for dict_path in dict_paths:
-        if not upload_duplicates and upload_statuses_dict[dict_path]:
+        dict_status = upload_statuses_dict.get(dict_path)  # None or False if not uploaded yet
+        if not upload_duplicates and dict_status:
             continue
         succ = post_measurement(auth_tuple=auth_tuple,
                                 endpoint=endpoint,
                                 dict_path=dict_path)
         succeeded_status[dict_path] = succ
-    if verbose:
-        print(json.dumps(succeeded_status))
+    # if verbose:
+    #     print(json.dumps(succeeded_status))
+    return succeeded_status
+
+
+def list_upload_paths(parent_dir=config.upload_dicts_directory):
+    parent_ls = os.listdir(parent_dir)
+    ret = list(map(lambda x: os.path.join(parent_dir, x), parent_ls))
+    return ret
+
+
+def lazy_post_measurements(auth_tuple, endpoint):
+    dict_paths = list_upload_paths()
+    print(len(dict_paths))
+    ret = post_measurements(auth_tuple, endpoint, dict_paths)
+    return ret
+
 
 
 if __name__ == "__main__":
@@ -176,10 +190,12 @@ if __name__ == "__main__":
     os.system("python C:/Users/jhart/PycharmProjects/butler/uploading.py")
     """
 
-    dict_path = r"C:/Users/jhart/PycharmProjects/butler/butler/upload_dicts/upload_dict_2022_04_29_16_51_04_cat-vision_1.json"
-
-    print(
-        post_measurement(auth_tuple=("jeff", "jeff"),
-                         endpoint="http://127.0.0.1:8000/rest/",
-                         dict_path=dict_path)
-    )
+    # dict_path = r"C:/Users/jhart/PycharmProjects/butler/butler/upload_dicts/upload_dict_2022_04_29_16_51_04_cat-vision_1.json"
+    res = lazy_post_measurements(auth_tuple=("jeff", "jeff"),
+                                 endpoint="http://127.0.0.1:8000/rest/")
+    print("result:\n", json.dumps(res))
+    # print(
+    #     post_measurement(auth_tuple=("jeff", "jeff"),
+    #                      endpoint="http://127.0.0.1:8000/rest/",
+    #                      dict_path=dict_path)
+    # )
