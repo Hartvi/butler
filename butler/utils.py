@@ -17,7 +17,7 @@ min_date = '0000_01_01_00_00_00'
 
 
 def compare_interval(rm_str, start, end):
-
+    """"""
     def f(str_date):
         x_strp_time = dt.strptime("_".join(str_date.replace(rm_str, "").split("_")[:6]), date_template)
         return start < x_strp_time < end
@@ -26,6 +26,15 @@ def compare_interval(rm_str, start, end):
 
 
 def update_json(p, update_dict):
+    """Update the JSON dictionary on the path `p` with the dictionary `update_dict`.
+
+    Parameters
+    ----------
+    p : str
+        The path to the file to be updated.
+    update_dict : dict
+        The dictionary to be dumped into `p`.
+    """
     with open(p, 'r+') as fp:
         existing_dict = json.load(fp)
         for c in update_dict:
@@ -36,6 +45,15 @@ def update_json(p, update_dict):
 
 
 def replace_json(p, update_dict):
+    """Dump the dictionary `update_dict` into the file `p` replacing it.
+
+    Parameters
+    ----------
+    p : str
+        The path to the file to be replaced.
+    update_dict : dict
+        The dictionary to be dumped into `p`.
+    """
     with open(p, 'w') as fp:
         # existing_dict = json.load(fp)
         # for c in update_dict:

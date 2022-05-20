@@ -138,8 +138,8 @@ class Butler:
 
     Parameters
     ----------
-    keywords : str list or tuple
-    List of keywords whose lines will be extracted when printed
+    keywords : str or list or tuple
+        List of keywords whose lines will be extracted when printed
     keep_keywords : bool
         Whether to also save the keywords with the rest of the print line
     setup_file : str
@@ -159,16 +159,9 @@ class Butler:
     data_files : list[str] or tuple[str]
         List of file paths that will be copied to `experiment_i/property_j/data` every time the function is run.
     ignore_colours : bool
-        Whether to ignore the special colour characters; in regex: "\033\[\d+(;\d+)?m"
+        Whether to ignore the special colour characters; in regex: "\033\[\d+](;\d+)?m"
     create_new_exp_on_run : bool
         Whether to create a new experiment_i folder on every run of the function.
-
-
-    Additional parameters
-    ---------------------
-    Butler.add_object_context(context) - adds extra info about the measurement\n
-    Butler.add_tmp_files(files, destination) - adds `files` to be copied to `destination` folder
-
 
     """
     session_exists = False
@@ -210,11 +203,11 @@ class Butler:
         Parameters
         ----------
         keywords : str list or tuple
-        List of keywords whose lines will be extracted when printed
+            List of keywords whose lines will be extracted when printed
         keep_keywords : bool
             Whether to also save the keywords with the rest of the print line
         setup_file : str
-            Path to the json containing the setup mappings. E.g. {"gripper": "robotiq 2f85", ...}
+            Path to the json containing the setup mappings. E.g. {"gripper": "robotiq_2f85", ...}
         read_return : bool
             Whether to take the return value (or first element in return tuple) as the measurement output. When False, see `outpu_bariable_name` parameter.
         session_parent_dir : str
@@ -233,13 +226,6 @@ class Butler:
             Whether to ignore the special colour characters; in regex: "\033\[\d+(;\d+)?m"
         create_new_exp_on_run : bool
             Whether to create a new experiment_i folder on every run of the function.
-
-
-        Additional parameters
-        ---------------------
-        Butler.add_object_context(context) - adds extra info about the measurement\n
-        Butler.add_tmp_files(files, destination) - adds `files` to be copied to `destination` folder
-
 
         """
         assert type(output_variable_name) == str,"measured object variable name must be string! & Only one per function"
@@ -600,7 +586,7 @@ class PropertyMeasurement:
     def __init__(self, property_name=None, measurement_type=None, parameters=None, units=None,
                  grasp=None, values=None, repository=None,
                  other=None, other_file=None, **kwargs):
-        self.property_name = property_name  # eg mass, elasticity, vision, sound
+        self.property_name = property_name  # e.g. mass, elasticity, vision, sound
         self.measurement_type = measurement_type  # continuous, discrete
         self.parameters = parameters  #
         self.units = units
@@ -610,7 +596,6 @@ class PropertyMeasurement:
         self.other = other
         self.other_file = other_file
         for k in kwargs:
-            # print(k, "=", str(kwargs[k]))
             exec("self."+k+"="+str(("\""+kwargs[k]+"\"") if isinstance(kwargs[k], str) else kwargs[k]))
 
     def __repr__(self):

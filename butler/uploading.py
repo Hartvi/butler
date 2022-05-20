@@ -154,13 +154,15 @@ def post_measurements(auth_tuple, endpoint, dict_paths, upload_statuses=config.u
         upload_statuses_dict = json.load(fp)
 
     for dict_path in dict_paths:
-        dict_status = upload_statuses_dict.get(dict_path)  # None or False if not uploaded yet
+        dp = dict_path.replace("\\", "/")
+        dict_status = upload_statuses_dict.get(dp)  # None or False if not uploaded yet
+        # print(dp, not upload_duplicates, dict_status)
         if not upload_duplicates and dict_status:
             continue
         succ = post_measurement(auth_tuple=auth_tuple,
                                 endpoint=endpoint,
-                                dict_path=dict_path)
-        succeeded_status[dict_path] = succ
+                                dict_path=dp)
+        succeeded_status[dp] = succ
     # if verbose:
     #     print(json.dumps(succeeded_status))
     return succeeded_status
@@ -174,10 +176,9 @@ def list_upload_paths(parent_dir=config.upload_dicts_directory):
 
 def lazy_post_measurements(auth_tuple, endpoint):
     dict_paths = list_upload_paths()
-    print(len(dict_paths))
+    # print(len(dict_paths))
     ret = post_measurements(auth_tuple, endpoint, dict_paths)
     return ret
-
 
 
 if __name__ == "__main__":
