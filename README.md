@@ -3,7 +3,53 @@ This is a utility repository for organized data storage without the need to modi
 
 The crux of this project is the `@butler` decorator. Simply decorate a function and it saves variables and print outputs as you like.
 
-# sphinx
+
+### Data measured @CTU KN:E-210
+- https://drive.google.com/drive/folders/127ytcRVTQYGDsdSTxj3F47wPl_egFChO?usp=sharing
+
+
+
+## how to use
+- inside the decorated function set the variables that you want to be saved as `butler.meas_object_to_be_saved = etc` & `butler.meas_setup = etc2`
+- if the decorated function is a class function, then the variables of the class can also be accessed. See the example
+- a `setup.json` file has to be present in the top directory where the experiment data is going to be saved
+
+### example
+```
+    @butler.Butler(keywords=['[BUTLER-TEST]', '[INFO]', '[INFER-INFO]', '[INFER]', '[ACSEL]', '[ACSEL-INFO]'],
+                   setup_file="/home/robot3/vision_ws/src/ipalm_control/butler/setup.json",
+                   data_variables=("self.data_variables", ))
+    def exploratoryAction(self, planned_action, mod_specs, translation_pos, mes_rot, iteration, ID):
+
+        assert isinstance(mod_specs, ut.model_specs)
+        _meas = None
+        self.camera1_values["camera"]["image"] = ""
+        self.gripper_values["gripper"] = {}
+        self.arm_values["arm"]["joint4_torque"] = []
+        self.camera1_values["camera"]["image"] = ""
+        self.microphone_values["microphone"]["recording"] = ""
+        self.gripper_position = translation_pos
+        self.gripper_rotation = mes_rot
+        
+        # ... shortened for this example
+        self.data_variables = butler.format_data_variables((self.microphone_values, self.arm_values, self.gripper_values, self.camera1_values))
+        current_object_dataset_id = None
+        current_common_name = "soft_yellow_sponge"
+        current_dataset = None
+        
+        if current_object_dataset_id in object_position_dict:
+            self.object_rotation, self.object_position = object_position_dict[current_object_dataset_id]
+        if current_common_name in object_position_dict:
+            self.object_rotation, self.object_position = object_position_dict[current_common_name]
+
+        _meas.object_pose = {"rotation": self.object_rotation, "position": self.object_position}
+        _meas.gripper_pose = {"rotation": self.gripper_rotation, "position": self.gripper_position, "grasped": self.gripper_has_grasped}
+        butler.Butler.add_object_context({"common_name": current_common_name, "dataset_id": current_object_dataset_id, "dataset": current_dataset})
+        return _meas, mod_specs
+
+```
+
+# sphinx documentation
 - commands in `docs/` folder:
   - `sphinx-apidoc -o ./source ..` - creates modules for all files
   - `.\make.bat html` - makes the html
@@ -21,11 +67,6 @@ The crux of this project is the `@butler` decorator. Simply decorate a function 
       modules
       ```
 
-local.butler
-local.uploader
-local.formatting
-local.utils
-local.conf
 
 # difference between ROSBAG & this
 - rosbags need the actual *datatype + ROS*
@@ -102,26 +143,5 @@ class Butler:
 butler = Butler.butler  # this dude can then have field so that the IDE recognizes them
 ```
 
-## how to use
-- inside the decorated function set the variables that you want to be saved as `butler.meas_object_to_be_saved = etc` & `butler.meas_setup = etc2`
-- if the decorated function is a class function, then the variables of the class can also be accessed. See the example
-- a `setup.json` file has to be present in the top directory where the experiment data is going to be saved
 
-
-### example
-```
-class BullshitClass:
-    def __init__(self):
-        self.bullshit_value = [1,2,3,4,5,6,7,8,9]
-
-    @butler("[INFO]", delimiter="\n", data_variables=("self.bullshit_value", ))
-    def multiply(self, a, b):
-        _meas = MeasObject("youngs_modulus", "continuous", {"mean": 500000, "std": 100000}, [1,5,8,5,2,7,5,1,3,8,7,1,5,8,85,1,5,8,8,4,12,65], 6)
-        print("this should only be in the top log")
-        print("[INFO] no thanks")
-        print("result: ", a*b)
-        # print(dir())
-        return _meas, a*b
-
-```
 
