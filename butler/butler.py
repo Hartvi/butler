@@ -3,7 +3,10 @@ from __future__ import print_function, division
 import sys
 import os
 from os.path import join
-from io import BytesIO
+if sys.version_info[0] == 2:
+    from io import BytesIO
+else:
+    from io import StringIO as BytesIO
 import json
 import numpy as np
 import re
@@ -17,6 +20,14 @@ _real_std_out = None  # type: BytesIO
 
 
 def format_data_variables(data_vars):
+    """
+    Removes unused "sensors" from the data variables.
+
+    Parameters
+    ----------
+    data_vars : tuple[dict]
+        Tuple of data variables formatted like a dictionary {"sensor": {"quantity": values}}
+    """
     ret = dict()
     for v in data_vars:  # {"sensor": {"quantity": values}}
         for s in v:  # "sensor"
@@ -644,56 +655,35 @@ if __name__ == "__main__":
             self.test_value4 = {"camera": {"point_cloud": "pointcloud.png"}}
             self.data_variables = {}
 
-        @Butler(keywords="[INFO]", data_variables=("self.test_value2", "self.test_value3", "self.test_value4"),
-                create_new_exp_on_run=True, setup_file=r"../setup.json")
-        def multiply(self, a, b):
-            _meas = PropertyMeasurement("elasticity", "continuous", {"mean": 500000, "std": 100000},
-                                        grasp={"position": [0.1, 0.2, 0.3], "rotation": [0.5, 0.9, 0.7], "grasped": True},
-                                        values=self.test_value1, units="Pa", repository="http://www.github.com", meas_ID=6)
-            print("this should only be in the top log")
-            print("[INFO] no thanks")
-
-            stringlol = "\033[1;31m Sample Text \033[0m"
-            print(stringlol)
-            print("result: ", a * b)
-            # print(dir())
-            Butler.add_object_context({"maker": "coca_cola"}, override_recommendation=False)
-            return _meas, a * b
-
         @Butler(keywords="[INFO]", keep_keywords=False, data_variables=("self.data_variables", ),
                 create_new_exp_on_run=True, setup_file=r"../setup.json")
         def divide(self, a, b):
             _meas = PropertyMeasurement(meas_prop="object_category",
                                         meas_type="continuous",  # "categorical",
-                                        params={"mean": 20.2, "std": 5.1, "units": "kg", "name": "x"},  # {"cat1": 0.5, "cat2": 0.3, "cat3": 0.2},
+                                        params={"mean": 20.2, "std": 5.1, "units": "kg", "name": "x"},
                                         meas_ID=6)
-            print("this should only be in the top log")
-            print("[INFO] divide baby [INFO]")
-            stringlol = "\033[1;31m Sample Text \033[0m"
+            print("this is in the top log")
+            print("[INFO] this is in the property log")
 
-            print(stringlol)
-            print("result: ", a / b)
-            # print(dir())
-            Butler.add_object_context({"common_name": "yellow_sponge"}, override_recommendation=False)
-            # TODO: DICT which maps input files to final output files: {sensor_output_file_path: .../data/banana.png}
+            Butler.add_object_context({"common_name": "ycb_cup", "dataset_id": "65-f_cup", "dataset": "ycb", "maker": "sample_company"})
             for k in self.test_value4:
                 self.data_variables[k] = self.test_value4[k]
             for k in self.test_value1:
                 self.data_variables[k] = self.test_value1[k]
-            Butler.add_tmp_files(r"../unused/tests/banana300.png", "data", "pointcloud.png")
-            Butler.add_measurement_png(r"../unused/tests/banana300.png")
+            Butler.add_tmp_files(r"../unused/tests/setup_cropped.png", "data", "pointcloud.png")
+            Butler.add_measurement_png(r"../unused/tests/setup_cropped.png")
 
-            _meas.grasp = {"position": [0.1, 0.2, 0.3], "rotation": [0.5, 0.8, 3.14], "grasped": True}
+            _meas.gripper_pose = {"position": [0.1, 0.2, 0.3], "rotation": [0.5, 0.8, 3.14], "grasped": True}
             _meas.object_pose = {"position": [0.3, 0.2, 0.1], "rotation": [3.0, 0.8, 3.14]}
             return _meas, a / b
 
 
-    for _ in os.listdir(config.experiment_directory):
-        tmp_dir = join(config.experiment_directory, _)
-        if os.path.isdir(tmp_dir):
-            rematch = re.findall(pattern=r"experiment_\d", string=_)
-            if len(rematch) == 1:
-                shutil.rmtree(tmp_dir)
+    # for _ in os.listdir(config.experiment_directory):
+    #     tmp_dir = join(config.experiment_directory, _)
+    #     if os.path.isdir(tmp_dir):
+    #         rematch = re.findall(pattern=r"experiment_\d", string=_)
+    #         if len(rematch) == 1:
+    #             shutil.rmtree(tmp_dir)
     # print(os.listdir(this_dir()))
     all_vars = dir()
     bc = TestClass()

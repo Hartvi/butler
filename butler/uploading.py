@@ -103,31 +103,33 @@ def post_measurement(auth_tuple,
 
     # collect files to be uploaded
     file_paths = get_file_names(upload_dict)
+    print("file_paths: ", file_paths)
 
     file_bytes = dict()
     for file_designation in file_paths:
         f = open(file_paths[file_designation], 'rb')
         file_bytes[file_designation] = f
-    print("data: ", data)
-    print("file_paths: ", file_paths)
+        file_bytes[file_designation] = f
+    # print("data: ", data)
+    # print("file_paths: ", file_paths)
     # with open(dict_path, 'r') as fp:
     #     upload_status = False
     #     if upload_duplicates:
     #         upload_status = uploaded_dicts_statuses
     if file_paths is not None:
-        req = requests.request(method, endpoint + path, auth=auth_tuple, data=data, files=file_bytes)
+        req = requests.request(method, endpoint + path, auth=auth_tuple, data=data, files=file_bytes, verify=False)
     else:
-        req = requests.request(method, endpoint + path, data=data)
+        req = requests.request(method, endpoint + path, auth=auth_tuple, data=data, verify=False)
     for file_designation in file_bytes:
         file_bytes[file_designation].close()
     try:
         json.loads(req.text)
         utils.update_json(p=config.uploaded_dicts_json, update_dict={dict_path: True})
-        return True
+        # return True
     except json.JSONDecodeError as e:
         utils.update_json(p=config.uploaded_dicts_json, update_dict={dict_path: False})
-        return False
-    # return req.text
+        # return False
+    return req.text
 
 
 def post_measurements(auth_tuple, endpoint, dict_paths, upload_statuses=config.uploaded_dicts_json, upload_duplicates=False):
@@ -191,12 +193,13 @@ if __name__ == "__main__":
     os.system("python C:/Users/jhart/PycharmProjects/butler/uploading.py")
     """
 
-    # dict_path = r"C:/Users/jhart/PycharmProjects/butler/butler/upload_dicts/upload_dict_2022_04_29_16_51_04_cat-vision_1.json"
-    res = lazy_post_measurements(auth_tuple=("jeff", "jeff"),
-                                 endpoint="http://127.0.0.1:8000/rest/")
-    print("result:\n", json.dumps(res))
-    # print(
-    #     post_measurement(auth_tuple=("jeff", "jeff"),
-    #                      endpoint="http://127.0.0.1:8000/rest/",
-    #                      dict_path=dict_path)
-    # )
+    # res = lazy_post_measurements(auth_tuple=("jeff", "jeff"),
+    #                              endpoint="http://127.0.0.1:8000/rest/")
+    # print("result:\n", json.dumps(res))
+    dict_path = r"C:/Users/jhart/PycharmProjects/butler/butler/upload_dicts/upload_dict_2022_04_29_16_51_04_cat-vision_0.json"
+    print(
+        post_measurement(auth_tuple=("hartvjir", "hartvjir"),
+         #                 endpoint="https://ptak.felk.cvut.cz/ipalm/rest/",
+                         endpoint="http://127.0.0.1:8000/rest/",
+                         dict_path=dict_path)
+    )

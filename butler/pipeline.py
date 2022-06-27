@@ -1,7 +1,11 @@
-import formatting, utils, uploading
+import formatting, utils, uploading, config
+import os
 
 if __name__ == "__main__":
     pass
+    # print(os.listdir(config.experiment_directory))
+    # exp_dirs = list(map(lambda x: os.path.join(config.experiment_directory, x), os.listdir(config.experiment_directory)))
+    # print(exp_dirs)
     exp_dirs = utils.get_experiment_dirs()
     for exp_dir in exp_dirs:
         formatting.experiment_to_json(exp_dir)

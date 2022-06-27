@@ -23,7 +23,7 @@ def change_experiment_jsons(update_dict, experiment_directory, json_file_name, r
 if __name__ == '__main__':
     pass
     # example how to add the "repository" field to a measurement JSON. This will appear in the entry
-    directory_to_change = "C:/Users/jhart/PycharmProjects/butler/butler/experiments/experiment_2022_05_03_15_54_05"
+    directory_to_change = "C:/Users/jhart/PycharmProjects/butler/butler/experiments/experiment_enamel_mug_ycb"
     # I forgot to change the object context before the measurement:
     # change_experiment_jsons({"dataset_id": "025_mug", "common_name": "enamel_mug_ycb"},
     #                         directory_to_change,
@@ -31,7 +31,7 @@ if __name__ == '__main__':
     #                         lambda x: True)
 
     # I forgot to shit the z up by 5:
-    # directory_to_change = "C:/Users/jhart/PycharmProjects/butler/butler/experiments/experiment_2022_04_29_16_51_04"
+    # directory_to_change = "C:/Users/jhart/PycharmProjects/butler/butler/experiments/experiment_banana_ycb"
     # change_experiment_jsons({"object_pose": {"position": [0.465, -0.013, 0.081], "rotation": [173.309, 15.525, -21.009]}},
     #                         directory_to_change,
     #                         "measurement.json",
@@ -45,17 +45,24 @@ if __name__ == '__main__':
     #                         replace=True)
 
     directories_to_change = [
-                             "C:/Users/jhart/PycharmProjects/butler/butler/experiments/experiment_2022_04_29_16_51_04",
-                             "C:/Users/jhart/PycharmProjects/butler/butler/experiments/experiment_2022_04_29_17_06_08",
-                             "C:/Users/jhart/PycharmProjects/butler/butler/experiments/experiment_2022_05_03_15_54_05",
-                             "C:/Users/jhart/PycharmProjects/butler/butler/experiments/experiment_2022_05_03_16_59_34",
-                             "C:/Users/jhart/PycharmProjects/butler/butler/experiments/experiment_2022_05_03_16_46_16",
-                             "C:/Users/jhart/PycharmProjects/butler/butler/experiments/experiment_2022_05_03_14_09_16",
+                             "C:/Users/jhart/PycharmProjects/butler/butler/experiments/experiment_banana_ycb",
+                             "C:/Users/jhart/PycharmProjects/butler/butler/experiments/experiment_banana",
+                             "C:/Users/jhart/PycharmProjects/butler/butler/experiments/experiment_enamel_mug_ycb",
+                             "C:/Users/jhart/PycharmProjects/butler/butler/experiments/experiment_wineglass_ycb",
+                             "C:/Users/jhart/PycharmProjects/butler/butler/experiments/experiment_wooden_box_ycb",
+                             "C:/Users/jhart/PycharmProjects/butler/butler/experiments/experiment_plastic_cup_ycb",
                              ]
     # I want all vision outputs to point to this repository because that's what I used to generate the image outputs
-    for dtc in directories_to_change:
-        change_experiment_jsons({"repository": "https://github.com/hartvjir/detectron2"},
-                                dtc,
-                                "measurement.json",
-                                lambda x: "at-vision" in x)
+    # for dtc in directories_to_change:
+    #     change_experiment_jsons({"repository": "https://github.com/hartvjir/detectron2"},
+    #                             dtc,
+    #                             "measurement.json",
+    #                             lambda x: "at-vision" in x)
+    white_kinova_dir = "/unused/experiments/experiments/experiment_white_kinova_cube_light"
+    white_kinova_context = {"common_name": "white_kinova_cube_light"}
+    change_experiment_jsons(white_kinova_context,
+                            white_kinova_dir,
+                            "object_context.json",
+                            lambda x: "data" in x,
+                            replace=True)
 

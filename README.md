@@ -110,18 +110,48 @@ butler = Butler.butler  # this dude can then have field so that the IDE recogniz
 
 ### example
 ```
-class BullshitClass:
-    def __init__(self):
-        self.bullshit_value = [1,2,3,4,5,6,7,8,9]
+class MeasObject:
+    def __init__(self, meas_prop, meas_type, params, values, units, meas_ID):
+        self.meas_prop = meas_prop  # eg mass, elasticity, vision, sound
+        self.meas_type = meas_type  # continuous, discrete
+        self.params = params  #
+        self.values = values
+        self.units = units
+        self.meas_ID = meas_ID
+        
 
-    @butler("[INFO]", delimiter="\n", data_variables=("self.bullshit_value", ))
-    def multiply(self, a, b):
-        _meas = MeasObject("youngs_modulus", "continuous", {"mean": 500000, "std": 100000}, [1,5,8,5,2,7,5,1,3,8,7,1,5,8,85,1,5,8,8,4,12,65], 6)
-        print("this should only be in the top log")
-        print("[INFO] no thanks")
-        print("result: ", a*b)
-        # print(dir())
-        return _meas, a*b
+class TestClass:
+    def __init__(self):
+        self.test_value1 = {"gripper_name": {"position": [1, 2, 3, 4, 5, 6, 7, 8, 9]}}
+        self.test_value2 = {"gripper_name": {"values": [9, 8, 7, 6, 5, 6, 7, 8, 9]}}
+        self.test_value3 = {"arm_name": {"current": [1, 2, 3, 4, 5, 6, 7, 8, 9]}}
+        self.test_value4 = {"camera": {"point_cloud": "pointcloud.png"}}
+        self.data_variables = {}
+
+    @Butler(keywords="[INFO]", keep_keywords=False, data_variables=("self.data_variables", ),
+            create_new_exp_on_run=True, setup_file=r"../setup.json")
+    def divide(self, a, b):
+        _meas = PropertyMeasurement(meas_prop="object_category",
+                                    meas_type="continuous",  # "categorical",
+                                    params={"mean": 20.2, "std": 5.1, "units": "kg", "name": "x"},
+                                    meas_ID=6)
+        print("this is in the top log")
+        print("[INFO] this is in the property log")
+
+        Butler.add_object_context({"common_name": "ycb_cup", "dataset_id": "65-f_cup", "dataset": "ycb", "maker": "sample_company"})
+        for k in self.test_value4:
+            self.data_variables[k] = self.test_value4[k]
+        for k in self.test_value1:
+            self.data_variables[k] = self.test_value1[k]
+        Butler.add_tmp_files(r"../unused/tests/setup_cropped.png", "data", "pointcloud.png")
+        Butler.add_measurement_png(r"../unused/tests/setup_cropped.png")
+
+        _meas.gripper_pose = {"position": [0.1, 0.2, 0.3], "rotation": [0.5, 0.8, 3.14], "grasped": True}
+        _meas.object_pose = {"position": [0.3, 0.2, 0.1], "rotation": [3.0, 0.8, 3.14]}
+        return _meas, a / b
+
+bc = TestClass()
+d = bc.divide(40, 20)
 
 ```
 
