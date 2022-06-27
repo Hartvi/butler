@@ -1,0 +1,198 @@
+{
+ "measurement": {
+  "object_instance": {
+   "common_name": "banana_ycb",
+   "dataset_id": "011_banana",
+   "dataset": "ycb"
+  },
+  "setup": {
+   "microphone": "rode_videomic_pro",
+   "camera": "intel_d435",
+   "gripper": "robotiq_2f85",
+   "arm": "kinova_gen3_6dof",
+   "algorithm": "https://gitlab.fel.cvut.cz/body-schema/ipalm/ipalm_control"
+  },
+  "sensor_outputs": {
+   "intel_d435": {
+    "image": "C:\\Users\\jhart\\PycharmProjects\\butler\\butler\\experiments\\experiment_2022_04_29_16_51_04\\cat-vision_0\\data\\img_cam1.png"
+   }
+  },
+  "grasp": null,
+  "object_pose": {
+   "rotation": [
+    173.309,
+    15.525,
+    -21.009
+   ],
+   "translation": [
+    0.465,
+    -0.013,
+    0.081
+   ]
+  },
+  "gripper_pose": {
+   "rotation": [
+    -180.0,
+    0.0,
+    0.0
+   ],
+   "grasped": false,
+   "translation": [
+    0.402437210083,
+    0.03723309089169682,
+    0.160072049689
+   ]
+  }
+ },
+ "entry": {
+  "values": [
+   {
+    "name": "clamp",
+    "probability": 0.0
+   },
+   {
+    "name": "cylinder",
+    "probability": 0.0
+   },
+   {
+    "name": "toaster",
+    "probability": 0.0
+   },
+   {
+    "name": "sodacan",
+    "probability": 0.0
+   },
+   {
+    "name": "choppingboard",
+    "probability": 0.0
+   },
+   {
+    "name": "pot",
+    "probability": 0.0
+   },
+   {
+    "name": "spatula",
+    "probability": 0.0
+   },
+   {
+    "name": "scissors",
+    "probability": 0.0
+   },
+   {
+    "name": "hammer",
+    "probability": 0.0
+   },
+   {
+    "name": "blender",
+    "probability": 0.0
+   },
+   {
+    "name": "dice",
+    "probability": 0.0
+   },
+   {
+    "name": "lego",
+    "probability": 0.0
+   },
+   {
+    "name": "kettle",
+    "probability": 0.5759696704578594
+   },
+   {
+    "name": "bowl",
+    "probability": 0.0
+   },
+   {
+    "name": "pen",
+    "probability": 0.0
+   },
+   {
+    "name": "mug",
+    "probability": 0.0
+   },
+   {
+    "name": "pan",
+    "probability": 0.0
+   },
+   {
+    "name": "coffeemaker",
+    "probability": 0.0
+   },
+   {
+    "name": "pill",
+    "probability": 0.0
+   },
+   {
+    "name": "knife",
+    "probability": 0.0
+   },
+   {
+    "name": "can",
+    "probability": 0.0
+   },
+   {
+    "name": "fork",
+    "probability": 0.0
+   },
+   {
+    "name": "plate",
+    "probability": 0.0
+   },
+   {
+    "name": "ball",
+    "probability": 0.0
+   },
+   {
+    "name": "drill",
+    "probability": 0.0
+   },
+   {
+    "name": "foodbox",
+    "probability": 0.0
+   },
+   {
+    "name": "screwdriver",
+    "probability": 0.0
+   },
+   {
+    "name": "glass",
+    "probability": 0.0
+   },
+   {
+    "name": "spoon",
+    "probability": 0.0
+   },
+   {
+    "name": "fruit",
+    "probability": 0.0
+   },
+   {
+    "name": "box",
+    "probability": 0.42403032954214054
+   },
+   {
+    "name": "thermos",
+    "probability": 0.0
+   },
+   {
+    "name": "wineglass",
+    "probability": 0.0
+   },
+   {
+    "name": "bakingtray",
+    "probability": 0.0
+   },
+   {
+    "name": "wrench",
+    "probability": 0.0
+   },
+   {
+    "name": "bottle",
+    "probability": 0.0
+   }
+  ],
+  "type": "categorical",
+  "name": "cat-vision",
+  "repository": "https://github.com/hartvjir/detectron2"
+ }
+}

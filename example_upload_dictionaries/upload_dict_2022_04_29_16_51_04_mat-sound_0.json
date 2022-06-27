@@ -1,0 +1,86 @@
+{
+ "measurement": {
+  "object_instance": {
+   "common_name": "banana_ycb",
+   "dataset_id": "011_banana",
+   "dataset": "ycb"
+  },
+  "setup": {
+   "microphone": "rode_videomic_pro",
+   "camera": "intel_d435",
+   "gripper": "robotiq_2f85",
+   "arm": "kinova_gen3_6dof",
+   "algorithm": "https://gitlab.fel.cvut.cz/body-schema/ipalm/ipalm_control"
+  },
+  "sensor_outputs": {
+   "rode_videomic_pro": {
+    "recording": "C:\\Users\\jhart\\PycharmProjects\\butler\\butler\\experiments\\experiment_2022_04_29_16_51_04\\mat-sound_0\\data\\recording.wav"
+   }
+  },
+  "grasp": null,
+  "object_pose": {
+   "rotation": [
+    173.309,
+    15.525,
+    -21.009
+   ],
+   "translation": [
+    0.465,
+    -0.013,
+    0.001
+   ]
+  },
+  "gripper_pose": {
+   "rotation": [
+    -180.0,
+    0.0,
+    0.0
+   ],
+   "grasped": false,
+   "translation": [
+    0.402437210083,
+    0.0,
+    0.1002049689
+   ]
+  }
+ },
+ "entry": {
+  "values": [
+   {
+    "name": "foam",
+    "probability": 0.13818138529524693
+   },
+   {
+    "name": "hard-plastic",
+    "probability": 0.01864656522169062
+   },
+   {
+    "name": "soft-plastic",
+    "probability": 0.12469655760772673
+   },
+   {
+    "name": "ceramic",
+    "probability": 0.0414181856505702
+   },
+   {
+    "name": "metal",
+    "probability": 0.2601251591174993
+   },
+   {
+    "name": "paper",
+    "probability": 0.27696052847077235
+   },
+   {
+    "name": "glass",
+    "probability": 0.12490234717782749
+   },
+   {
+    "name": "wood",
+    "probability": 0.015069271458666449
+   }
+  ],
+  "type": "categorical",
+  "name": "mat-sound",
+  "repository": null
+ }
+}

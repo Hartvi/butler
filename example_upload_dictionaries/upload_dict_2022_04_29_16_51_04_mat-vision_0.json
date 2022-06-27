@@ -1,0 +1,86 @@
+{
+ "measurement": {
+  "object_instance": {
+   "common_name": "banana_ycb",
+   "dataset_id": "011_banana",
+   "dataset": "ycb"
+  },
+  "setup": {
+   "microphone": "rode_videomic_pro",
+   "camera": "intel_d435",
+   "gripper": "robotiq_2f85",
+   "arm": "kinova_gen3_6dof",
+   "algorithm": "https://gitlab.fel.cvut.cz/body-schema/ipalm/ipalm_control"
+  },
+  "sensor_outputs": {
+   "intel_d435": {
+    "image": "C:\\Users\\jhart\\PycharmProjects\\butler\\butler\\experiments\\experiment_2022_04_29_16_51_04\\mat-vision_0\\data\\img_cam1.png"
+   }
+  },
+  "grasp": null,
+  "object_pose": {
+   "rotation": [
+    173.309,
+    15.525,
+    -21.009
+   ],
+   "translation": [
+    0.465,
+    -0.013,
+    0.081
+   ]
+  },
+  "gripper_pose": {
+   "rotation": [
+    -180.0,
+    0.0,
+    0.0
+   ],
+   "grasped": false,
+   "translation": [
+    0.402437210083,
+    -0.03217710792777457,
+    0.160072049689
+   ]
+  }
+ },
+ "entry": {
+  "values": [
+   {
+    "name": "ceramic",
+    "probability": 0.0
+   },
+   {
+    "name": "metal",
+    "probability": 0.0
+   },
+   {
+    "name": "plastic",
+    "probability": 0.2987413191382818
+   },
+   {
+    "name": "water",
+    "probability": 0.0
+   },
+   {
+    "name": "glass",
+    "probability": 0.22500456501768473
+   },
+   {
+    "name": "wood",
+    "probability": 0.0
+   },
+   {
+    "name": "paper",
+    "probability": 0.3589243503374806
+   },
+   {
+    "name": "other",
+    "probability": 0.11732976550655283
+   }
+  ],
+  "type": "categorical",
+  "name": "mat-vision",
+  "repository": "https://github.com/hartvjir/detectron2"
+ }
+}
