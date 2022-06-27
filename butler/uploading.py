@@ -196,10 +196,10 @@ if __name__ == "__main__":
     # res = lazy_post_measurements(auth_tuple=("jeff", "jeff"),
     #                              endpoint="http://127.0.0.1:8000/rest/")
     # print("result:\n", json.dumps(res))
-    dict_path = r"C:/Users/jhart/PycharmProjects/butler/butler/upload_dicts/upload_dict_2022_04_29_16_51_04_cat-vision_0.json"
+    dict_path = r"C:/Users/jhart/PycharmProjects/butler/butler/upload_dicts/upload_dict_2022_04_29_17_06_08_cat-vision_0.json"
     print(
         post_measurement(auth_tuple=("hartvjir", "hartvjir"),
-         #                 endpoint="https://ptak.felk.cvut.cz/ipalm/rest/",
-                         endpoint="http://127.0.0.1:8000/rest/",
+                         endpoint="https://ptak.felk.cvut.cz/ipalm/rest/",
+         #                 endpoint="http://127.0.0.1:8000/rest/",
                          dict_path=dict_path)
     )

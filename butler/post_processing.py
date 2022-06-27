@@ -46,7 +46,7 @@ if __name__ == '__main__':
 
     directories_to_change = [
                              "C:/Users/jhart/PycharmProjects/butler/butler/experiments/experiment_banana_ycb",
-                             "C:/Users/jhart/PycharmProjects/butler/butler/experiments/experiment_banana",
+                             "C:/Users/jhart/PycharmProjects/butler/butler/experiments/experiment_2022_04_29_17_06_08",
                              "C:/Users/jhart/PycharmProjects/butler/butler/experiments/experiment_enamel_mug_ycb",
                              "C:/Users/jhart/PycharmProjects/butler/butler/experiments/experiment_wineglass_ycb",
                              "C:/Users/jhart/PycharmProjects/butler/butler/experiments/experiment_wooden_box_ycb",

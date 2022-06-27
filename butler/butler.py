@@ -625,28 +625,6 @@ class PropertyMeasurement:
 
 
 if __name__ == "__main__":
-    class MeasObject:
-        """
-        "density", "continuous", {"mean": 100, "sigma": 10}, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], meas_ID=1
-        """
-
-        def __init__(self, meas_prop, meas_type, params, values, units, meas_ID):
-            self.meas_prop = meas_prop  # eg mass, elasticity, vision, sound
-            self.meas_type = meas_type  # continuous, discrete
-            self.params = params  #
-            self.values = values
-            self.units = units
-            self.meas_ID = meas_ID
-
-        def __repr__(self):
-            rep = ""
-            rep += "------ID:{}------\n".format(self.meas_ID)
-            rep += "Property: {} of type: {}\n".format(self.meas_prop, self.meas_type)
-            rep += "Params: {}\n".format(self.params)
-            rep += "Some Values: {}...{}\n".format(self.values[0:5], self.values[-5:])
-            return rep
-
-
     class TestClass:
         def __init__(self):
             self.test_value1 = {"gripper_name": {"position": [1, 2, 3, 4, 5, 6, 7, 8, 9]}}
@@ -668,8 +646,6 @@ if __name__ == "__main__":
             Butler.add_object_context({"common_name": "ycb_cup", "dataset_id": "65-f_cup", "dataset": "ycb", "maker": "sample_company"})
             for k in self.test_value4:
                 self.data_variables[k] = self.test_value4[k]
-            for k in self.test_value1:
-                self.data_variables[k] = self.test_value1[k]
             Butler.add_tmp_files(r"../unused/tests/setup_cropped.png", "data", "pointcloud.png")
             Butler.add_measurement_png(r"../unused/tests/setup_cropped.png")
 
@@ -678,15 +654,5 @@ if __name__ == "__main__":
             return _meas, a / b
 
 
-    # for _ in os.listdir(config.experiment_directory):
-    #     tmp_dir = join(config.experiment_directory, _)
-    #     if os.path.isdir(tmp_dir):
-    #         rematch = re.findall(pattern=r"experiment_\d", string=_)
-    #         if len(rematch) == 1:
-    #             shutil.rmtree(tmp_dir)
-    # print(os.listdir(this_dir()))
-    all_vars = dir()
     bc = TestClass()
-    # c = bc.multiply(39, 20)
     d = bc.divide(40, 20)
-    # print(eval("__file__"))

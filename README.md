@@ -7,7 +7,12 @@ The crux of this project is the `@butler` decorator. Simply decorate a function 
 ### Data measured @CTU KN:E-210
 - https://drive.google.com/drive/folders/127ytcRVTQYGDsdSTxj3F47wPl_egFChO?usp=sharing
 
-
+## TODO
+- tutorial on how to use it to:
+  - record experiments
+  - upload dictionaries
+- add examples
+- add a link to this repository on the website https://ptak.felk.cvut.cz/ipalm
 
 ## how to use
 - inside the decorated function set the variables that you want to be saved as `butler.meas_object_to_be_saved = etc` & `butler.meas_setup = etc2`
