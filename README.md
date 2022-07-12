@@ -21,16 +21,6 @@ The crux of this project is the `@butler` decorator. Simply decorate a function 
 
 ### example
 ```
-class MeasObject:
-    def __init__(self, meas_prop, meas_type, params, values, units, meas_ID):
-        self.meas_prop = meas_prop  # eg mass, elasticity, vision, sound
-        self.meas_type = meas_type  # continuous, discrete
-        self.params = params  #
-        self.values = values
-        self.units = units
-        self.meas_ID = meas_ID
-        
-
 class TestClass:
     def __init__(self):
         self.test_value1 = {"gripper_name": {"position": [1, 2, 3, 4, 5, 6, 7, 8, 9]}}
@@ -54,7 +44,7 @@ class TestClass:
             self.data_variables[k] = self.test_value4[k]
         for k in self.test_value1:
             self.data_variables[k] = self.test_value1[k]
-        Butler.add_tmp_files(r"../unused/tests/setup_cropped.png", "data", "pointcloud.png")
+        Butler.add_tmp_files(r"../unused/tests/setup_cropped.png", "data", "pointcloud.png")  # 
         Butler.add_measurement_png(r"../unused/tests/setup_cropped.png")
 
         _meas.gripper_pose = {"position": [0.1, 0.2, 0.3], "rotation": [0.5, 0.8, 3.14], "grasped": True}
@@ -63,7 +53,6 @@ class TestClass:
 
 bc = TestClass()
 d = bc.divide(40, 20)
-
 ```
 
 # sphinx documentation

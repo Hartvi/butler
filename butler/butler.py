@@ -155,8 +155,6 @@ class Butler:
         Whether to also save the keywords with the rest of the print line
     setup_file : str
         Path to the json containing the setup mappings. E.g. {"gripper": "robotiq 2f85", ...}
-    read_return : bool
-        Whether to take the return value (or first element in return tuple) as the measurement output. When False, see `outpu_bariable_name` parameter.
     session_parent_dir : str
         Directory where to save the experiments; default is the butler.py directory
     output_variable_name : str
@@ -199,7 +197,6 @@ class Butler:
                  keywords=(),
                  keep_keywords=True,
                  setup_file="setup.json",
-                 read_return=True,
                  session_parent_dir=config.experiment_directory,
                  output_variable_name="",
                  data_variables=(),
@@ -219,8 +216,6 @@ class Butler:
             Whether to also save the keywords with the rest of the print line
         setup_file : str
             Path to the json containing the setup mappings. E.g. {"gripper": "robotiq_2f85", ...}
-        read_return : bool
-            Whether to take the return value (or first element in return tuple) as the measurement output. When False, see `outpu_bariable_name` parameter.
         session_parent_dir : str
             Directory where to save the experiments; default is the butler.py directory
         output_variable_name : str
@@ -239,7 +234,8 @@ class Butler:
             Whether to create a new experiment_i folder on every run of the function.
 
         """
-        assert type(output_variable_name) == str,"measured object variable name must be string! & Only one per function"
+        assert type(output_variable_name) == str or output_variable_name is None,\
+            "measured object variable name must be a string!"
 
         assert type(keywords) == str or type(keywords) == list or type(keywords) == tuple, \
             "keywords must be of type str or list[str]"
@@ -247,7 +243,6 @@ class Butler:
         self.keywords = keywords
         self.keep_keywords = keep_keywords
         self.setup_file = setup_file
-        self.read_return = read_return
         self.session_parent_dir = session_parent_dir
         self.output_variable_name = output_variable_name
         self.data_variables = data_variables
@@ -275,7 +270,6 @@ class Butler:
         if self.session_paths is None and not create_new_exp_on_run:
             self.session_paths = self._create_directory_tree_for_session()
 
-
     def __call__(self, f):
 
         def wrapper(*args, **kwargs):
@@ -294,7 +288,7 @@ class Butler:
             """single property logs, etc."""
             """meas_prop, meas_type, params, values, meas_ID"""
 
-            if self.read_return:
+            if self.output_variable_name is None:
                 if type(res) == tuple:
                     output_variable = res[0]
                 else:
@@ -633,7 +627,9 @@ if __name__ == "__main__":
             self.test_value4 = {"camera": {"point_cloud": "pointcloud.png"}}
             self.data_variables = {}
 
-        @Butler(keywords="[INFO]", keep_keywords=False, data_variables=("self.data_variables", ),
+        @Butler(keywords="[INFO]",
+                keep_keywords=False,
+                data_variables=("self.data_variables", ),
                 create_new_exp_on_run=True, setup_file=r"../setup.json")
         def divide(self, a, b):
             _meas = PropertyMeasurement(meas_prop="object_category",
