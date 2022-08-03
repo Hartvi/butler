@@ -51,6 +51,7 @@ def standardize_keys_from_dict(d, patterns_dict):
 
 
 def _data_dicts_to_sensor_outputs(sensor_outputs, data_dict, setup_dict, prop_dir):
+    # print("setup_dict:", setup_dict)
     # ret = dict()
     # if type(data_dict) != list and type(data_dict) == dict:
     #     data_dict = [data_dict, ]
@@ -66,11 +67,12 @@ def _data_dicts_to_sensor_outputs(sensor_outputs, data_dict, setup_dict, prop_di
         elif sn in setup_dict.values():
             data_source = sn
         else:
-            print(KeyError("data source/sensor `"+str(sn)+"` not specified in experiment_i/setup.json: "+str(setup_dict)))
+            print("[warning] data source/sensor `"+str(sn)+"` not specified in experiment_i/setup.json: "+str(setup_dict))
             continue
 
         data_values = data_dict[sn]
         print("data_values: ", data_values)
+        # exit(1)
         print("sensor_outputs.keys()", sensor_outputs.keys())
         data_source_exists = data_source in sensor_outputs  # if a sensor has already been added to `sensor_outputs`
         sensor_output_keys = sensor_outputs[data_source].keys() if data_source_exists else list()
@@ -101,8 +103,8 @@ def _data_dicts_to_sensor_outputs(sensor_outputs, data_dict, setup_dict, prop_di
                 p = join(prop_dir, fd, output_name)
                 if os.path.isfile(p) and p != output_name:
                     # print("path before: ", output_name)
-                    outs[modality] = p
-                    # print("path after: ", p)
+                    outs[modality] = p.replace("\\", "/")
+                    # print("path after: ", outs[modality])
         # print("sensor_outputs[data_source]: ", sensor_outputs[data_source])
 
 
@@ -146,8 +148,12 @@ def experiment_to_json(experiment_directory, out_file=None):
         Returns the processed experiment in the form of a dict, which close to the final format for uploading.
     """
     if out_file is None:
-        out_file = "upload_dict_"+"_".join(experiment_directory.split("_")[-6:])
+
+        out_file = "upload_dict_"+"_".join( os.path.basename(experiment_directory.replace("\\", "/")).replace("experiment_", "").split("_"))
+        print("out_file:", out_file)
         out_file = os.path.abspath(os.path.join(config.upload_dicts_directory, out_file))
+        print("out_file:", out_file)
+        # exit(1)
     prop_dirs = os.listdir(experiment_directory)
     valid_dirs = list()
     for _ in prop_dirs:
@@ -229,8 +235,14 @@ def experiment_to_json(experiment_directory, out_file=None):
                     _make_one_entry(parameters, entry_value, measurement_object_dict)
         elif measurement_type == "categorical":
             entry_out = parameters
-            cat_sum = sum(entry_out.values())
-            print("category sum: ",cat_sum)
+            print("entry_out:", entry_out)
+            try:
+                # sometimes params can be a dict like so: {..., "params": {"precision": 0.7}, ...}
+                cat_sum = sum(entry_out.values())
+            except:
+                cat_sum = -1
+                pass
+            print("category sum: ", cat_sum)
             if abs(cat_sum - 1.0) > 0.01:
                 entry_out = get_recursive_regex(entry_out, pred_pattern)
 
@@ -300,7 +312,11 @@ def experiment_to_json(experiment_directory, out_file=None):
         measurement_dict["gripper_pose"] = gripper_pose
         request_dict["entry"] = entry_dict
         # print("\nrequest_dict: ", request_dict, "\n")
-        with open(out_file + "_" + local_prop_name + ".json", "w") as fp:
+        upload_dict_path = out_file + "_" + local_prop_name + ".json"
+        print("out_file:", out_file)
+        print("local_prop_name:", local_prop_name)
+        print("upload_dict_path:", upload_dict_path)
+        with open(upload_dict_path, "w") as fp:
             json.dump(fp=fp, obj=request_dict, indent=True)
         # return request_dict
 
@@ -333,7 +349,7 @@ def convert_experiments(interval="__all__"):
         else:
             end = dt.strptime(interval[1], date_template)
         assert start < end, "Start date must be older than end date: "+str(interval[0])+" vs "+str(interval[1])
-        exp_dirs = get_experiment_dirs(rule=utils.compare_interval("experiment_", start, end))
+        exp_dirs = get_experiment_dirs(extra_rule=utils.compare_interval("experiment_", start, end))
     for exp_dir in exp_dirs:
         experiment_to_json(exp_dir)
 

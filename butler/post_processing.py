@@ -58,10 +58,14 @@ if __name__ == '__main__':
     #                             dtc,
     #                             "measurement.json",
     #                             lambda x: "at-vision" in x)
-    white_kinova_dir = "/unused/experiments/experiments/experiment_white_kinova_cube_light"
-    white_kinova_context = {"common_name": "white_kinova_cube_light"}
-    change_experiment_jsons(white_kinova_context,
-                            white_kinova_dir,
+    # white_kinova_dir = "/unused/experiments/experiments/experiment_white_kinova_cube_light"
+    # white_kinova_context = {"common_name": "white_kinova_cube_light"}
+
+    new_banana_context = {"common_name": "banana"}
+    new_banana_dir = "C:/Users/jhart/PycharmProjects/butler/butler/experiments/experiment_2022_04_29_17_06_08"
+
+    change_experiment_jsons(new_banana_context,
+                            new_banana_dir,
                             "object_context.json",
                             lambda x: "data" in x,
                             replace=True)

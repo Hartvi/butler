@@ -119,8 +119,8 @@ def get_recursive(obj, key):
 # p = r"lo.*"
 # print(get_regex(dd, p))
 
-def get_experiment_dirs(directory=config.experiment_directory, rule=None):
-    """Returns all directories in `directory` that correspond to the format `experiment(_.*)x6`. E.g. experiment_2022_03_31_21_49_21.
+def get_experiment_dirs(directory=config.experiment_directory, use_default_format=True, extra_rule=lambda x: "experiment" in x):
+    """Returns all directories in `directory` that correspond to the format `experiment(_.*)x6` by default. E.g. experiment_2022_03_31_21_49_21.
 
     Parameters
     ----------
@@ -129,11 +129,13 @@ def get_experiment_dirs(directory=config.experiment_directory, rule=None):
 
     """
     ls_exp_dir = os.listdir(directory)
-    experiment_dirs = filter(lambda x: len(x.split("_")) == 7, ls_exp_dir)
-    if rule is None:
+    experiment_dirs = ls_exp_dir
+    if use_default_format:
+        experiment_dirs = filter(lambda x: len(x.split("_")) == 7, ls_exp_dir)
+    if extra_rule is None:
         ret_dirs = experiment_dirs
     else:
-        ret_dirs = filter(rule, experiment_dirs)
+        ret_dirs = filter(extra_rule, experiment_dirs)
     abs_experiment_dirs = list(map(lambda x: os.path.join(directory, x), ret_dirs))
     return abs_experiment_dirs
 

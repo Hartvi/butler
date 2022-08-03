@@ -64,15 +64,16 @@ def get_file_names(formatted_dict):
         else:
             raise ValueError("object_instance.other_file: `" + str(object_instance_file) + "` is not a file!!")
 
-    entry = formatted_dict["entry"]
-    values = entry["values"]
-    for v in values:
-        value_file = v.get("other_file")
-        if value_file is not None:
-            if os.path.isfile(str(value_file)):
-                ret["entry values " + v["name"]] = value_file
-            else:
-                raise ValueError("value: `" + str(value_file) + "` is not a file!!")
+    entry = formatted_dict.get("entry")
+    if entry is not None:
+        values = entry["values"]
+        for v in values:
+            value_file = v.get("other_file")
+            if value_file is not None:
+                if os.path.isfile(str(value_file)):
+                    ret["entry values " + v["name"]] = value_file
+                else:
+                    raise ValueError("value: `" + str(value_file) + "` is not a file!!")
     return ret
 
 
@@ -98,12 +99,13 @@ def post_measurement(auth_tuple,
     method = "POST"
     # collect dict
     with open(dict_path, "r") as fp:
+        print("uploading: ",dict_path)
         upload_dict = json.load(fp)
         data = {"measurement": json.dumps(upload_dict)}
 
     # collect files to be uploaded
     file_paths = get_file_names(upload_dict)
-    print("file_paths: ", file_paths)
+    # print("file_paths: ", file_paths)
 
     file_bytes = dict()
     for file_designation in file_paths:
@@ -127,7 +129,9 @@ def post_measurement(auth_tuple,
         utils.update_json(p=config.uploaded_dicts_json, update_dict={dict_path: True})
         # return True
     except json.JSONDecodeError as e:
+        pass
         utils.update_json(p=config.uploaded_dicts_json, update_dict={dict_path: False})
+        print("bad request: ", dict_path)
         # return False
     return req.text
 
@@ -193,13 +197,18 @@ if __name__ == "__main__":
     os.system("python C:/Users/jhart/PycharmProjects/butler/uploading.py")
     """
 
-    # res = lazy_post_measurements(auth_tuple=("jeff", "jeff"),
-    #                              endpoint="http://127.0.0.1:8000/rest/")
-    # print("result:\n", json.dumps(res))
-    dict_path = r"C:/Users/jhart/PycharmProjects/butler/butler/upload_dicts/upload_dict_2022_04_29_17_06_08_cat-vision_0.json"
-    print(
-        post_measurement(auth_tuple=("jeff", "jeff"),
-                         # endpoint="https://ptak.felk.cvut.cz/ipalm/rest/",
-                         endpoint="http://127.0.0.1:8000/rest/",
-                         dict_path=dict_path)
-    )
+    res = lazy_post_measurements(auth_tuple=("hartvjir", "hartvjir"),
+                                 # endpoint="https://cmp.felk.cvut.cz/ipalm/rest/",
+                                 endpoint="http://127.0.0.1:8000/rest/"
+                                 )
+    print("result:\n", json.dumps(res))
+    # dict_path = r"C:/Users/jhart/PycharmProjects/butler/butler/upload_dicts/upload_dict_2022_04_29_17_06_08_density_0.json"
+    dict_path = "C:/Users/jhart/PycharmProjects/butler/butler/upload_dicts/upload_dict_2F85-2020-09-23-19-05-NF2140-50-0.006800.json"
+    # dict_path = r"C:/Users/jhart/PycharmProjects/butler/butler/upload_dicts/upload_dict_2022_04_29_17_06_08_cat-vision_0.json"
+    # print(
+    #     post_measurement(auth_tuple=("hartvjir", "hartvjir"),
+    #                      # endpoint="https://cmp.felk.cvut.cz/ipalm/rest/",
+    #                      endpoint="http://127.0.0.1:8000/rest/",
+    #                      dict_path=dict_path)
+    # )
+
