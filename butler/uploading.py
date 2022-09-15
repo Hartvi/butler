@@ -38,6 +38,8 @@ def get_file_names(formatted_dict):
     for sensor_name in sensor_outputs:
         # print("sensor_name", sensor_name)
         output_quantities = sensor_outputs[sensor_name]
+        # print(output_quantities)
+        # print(sensor_name)
         for output_quantity in output_quantities:
             # print("output_quantity", output_quantity)
             single_output = output_quantities[output_quantity]
@@ -111,7 +113,6 @@ def post_measurement(auth_tuple,
     for file_designation in file_paths:
         f = open(file_paths[file_designation], 'rb')
         file_bytes[file_designation] = f
-        file_bytes[file_designation] = f
     # print("data: ", data)
     # print("file_paths: ", file_paths)
     # with open(dict_path, 'r') as fp:
@@ -163,8 +164,10 @@ def post_measurements(auth_tuple, endpoint, dict_paths, upload_statuses=config.u
         dp = dict_path.replace("\\", "/")
         dict_status = upload_statuses_dict.get(dp)  # None or False if not uploaded yet
         # print(dp, not upload_duplicates, dict_status)
-        if not upload_duplicates and dict_status:
+        if not upload_duplicates and dict_status:  # dict_status = True when it has been uploaded TODO: it is set to true even when an upload fails but the request returns a JSON
             continue
+        # print("dont upload: ", dp, dict_status == True)
+        # succ = None
         succ = post_measurement(auth_tuple=auth_tuple,
                                 endpoint=endpoint,
                                 dict_path=dp)
@@ -182,7 +185,8 @@ def list_upload_paths(parent_dir=config.upload_dicts_directory):
 
 def lazy_post_measurements(auth_tuple, endpoint):
     dict_paths = list_upload_paths()
-    # print(len(dict_paths))
+    # print(len(dict_paths), dict_paths)
+    # ret = None
     ret = post_measurements(auth_tuple, endpoint, dict_paths)
     return ret
 
@@ -197,16 +201,17 @@ if __name__ == "__main__":
     os.system("python C:/Users/jhart/PycharmProjects/butler/uploading.py")
     """
 
-    res = lazy_post_measurements(auth_tuple=("hartvjir", "hartvjir"),
-                                 # endpoint="https://cmp.felk.cvut.cz/ipalm/rest/",
-                                 endpoint="http://127.0.0.1:8000/rest/"
+    # last sent: uploading:  C:/Users/jhart/PycharmProjects/butler/butler/upload_dicts/upload_dict_bluecube - SoftHand-2021-02-24-13-21-qbhand1-1.json
+    res = lazy_post_measurements(auth_tuple=("FILL IN USERNAME", "FILL IN PASSWORD"),
+                                 endpoint="https://cmp.felk.cvut.cz/ipalm/rest/",
+                                 # endpoint="http://127.0.0.1:8000/rest/"
                                  )
-    print("result:\n", json.dumps(res))
-    # dict_path = r"C:/Users/jhart/PycharmProjects/butler/butler/upload_dicts/upload_dict_2022_04_29_17_06_08_density_0.json"
-    dict_path = "C:/Users/jhart/PycharmProjects/butler/butler/upload_dicts/upload_dict_2F85-2020-09-23-19-05-NF2140-50-0.006800.json"
-    # dict_path = r"C:/Users/jhart/PycharmProjects/butler/butler/upload_dicts/upload_dict_2022_04_29_17_06_08_cat-vision_0.json"
+    # print("result:\n", json.dumps(res))
+    dict_path = r"C:/Users/jhart/PycharmProjects/butler/butler/upload_dicts/upload_dict_2022_04_29_17_06_08_density_0.json"
+    # dict_path = "C:/Users/jhart/PycharmProjects/butler/butler/upload_dicts/upload_dict_2F85-2020-09-23-19-05-NF2140-50-0.006800.json"
+    dict_path = r"C:/Users/jhart/PycharmProjects/butler/butler/upload_dicts/upload_dict_2022_04_29_17_06_08_cat-vision_0.json"
     # print(
-    #     post_measurement(auth_tuple=("hartvjir", "hartvjir"),
+    #     post_measurement(auth_tuple=("FILL IN USERNAME", "FILL IN PASSWORD"),
     #                      # endpoint="https://cmp.felk.cvut.cz/ipalm/rest/",
     #                      endpoint="http://127.0.0.1:8000/rest/",
     #                      dict_path=dict_path)

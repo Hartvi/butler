@@ -8,11 +8,19 @@ The crux of this project is the `@butler` decorator. Simply decorate a function 
 - https://drive.google.com/drive/folders/127ytcRVTQYGDsdSTxj3F47wPl_egFChO?usp=sharing
 
 ## TODO
-- tutorial on how to use it to:
+- authentication for sending a correction form
+- add how to call the `post_measurement` function in the uploading tutorial
+- maybe do a UI for uploading - drag & drop?
+- database structure:
+  - todo: unique ID for a measurement so other measurements that depend on it can refer to it
+  - todo: measurement action/method: grasp vs poke vs vision
+  - BENCHMARK
+- todo: have a central place where to keep track of the names of already existing objects
+- kinda done: tutorial on how to use it to:
   - record experiments
   - upload dictionaries
-- add examples
-- add a link to this repository on the website https://ptak.felk.cvut.cz/ipalm
+- kinda done: add examples
+- done: add a link to this repository on the website https://ptak.felk.cvut.cz/ipalm
 
 ## how to use
 - inside the decorated function set the variables that you want to be saved as `butler.meas_object_to_be_saved = etc` & `butler.meas_setup = etc2`

@@ -50,7 +50,7 @@ def standardize_keys_from_dict(d, patterns_dict):
     return new_d
 
 
-def _data_dicts_to_sensor_outputs(sensor_outputs, data_dict, setup_dict, prop_dir):
+def _data_dicts_to_sensor_outputs(sensor_outputs, data_dict, setup_dict, prop_dir, dynamic_setup=False):
     # print("setup_dict:", setup_dict)
     # ret = dict()
     # if type(data_dict) != list and type(data_dict) == dict:
@@ -58,7 +58,7 @@ def _data_dicts_to_sensor_outputs(sensor_outputs, data_dict, setup_dict, prop_di
     # elif type(data_dict) != list:
     #     raise TypeError("data_dict isn't a Union[dict, list]: " + str(data_dict))
     # print(sensor_outputs)
-    print("data_dict", data_dict)
+    # print("data_dict", data_dict)
     for sn in data_dict:  # sn = sensor name
         # if the user entered the sensor name: ok; else if the type of sensor: convert to sensor name
         # e.g. `gripper: robotiq 2f85` : it ends up being "robotiq 2f85" even if the user enters "gripper" as the source
@@ -67,18 +67,25 @@ def _data_dicts_to_sensor_outputs(sensor_outputs, data_dict, setup_dict, prop_di
         elif sn in setup_dict.values():
             data_source = sn
         else:
-            print("[warning] data source/sensor `"+str(sn)+"` not specified in experiment_i/setup.json: "+str(setup_dict))
-            continue
+            return
+        # elif dynamic_setup:
+        #     setup_dict["misc"] = sn
+        #     data_source = sn
+        # else:
+        #     raise KeyError("data source/sensor `"+str(sn)+"` not specified in experiment_i/setup.json: "+str(setup_dict)
+        #                    + "\nSet dynamic_setup=True to dynamically add setup elements as \"type\"=\"misc\", e.g. graspit")
 
         data_values = data_dict[sn]
-        print("data_values: ", data_values)
+        # print("data_values: ", data_values)
         # exit(1)
-        print("sensor_outputs.keys()", sensor_outputs.keys())
+        # print("sensor_outputs.keys()", sensor_outputs.keys())
         data_source_exists = data_source in sensor_outputs  # if a sensor has already been added to `sensor_outputs`
         sensor_output_keys = sensor_outputs[data_source].keys() if data_source_exists else list()
         if data_values is None:
-            print("[WARN] sensor `"+str(sn)+"` has output `None`")
-            continue
+            print("[WARN] Sensor `"+str(sn)+"` has output `None`")
+            return
+        if isinstance(data_values, list) and dynamic_setup:
+            raise TypeError("The measurement.json[\"values\"] doesn't contain keys that are in the setup. Try setting dynamic_setup=False")
         data_dict_keys = data_values.keys()  # the new arrivals - the keys that are about to be added
 
         # if a modality has already been added and one tries to add it again
@@ -97,14 +104,22 @@ def _data_dicts_to_sensor_outputs(sensor_outputs, data_dict, setup_dict, prop_di
         else:
             sensor_outputs[data_source] = data_values
         outs = sensor_outputs[data_source]
+        # print("outs: ", outs)
+        # print("file_dirs: ", file_dirs)
         for modality in outs:
+            # print("modality: ", modality)
             for fd in file_dirs:
                 output_name = str(outs[modality])
-                p = join(prop_dir, fd, output_name)
-                if os.path.isfile(p) and p != output_name:
+                p = join(prop_dir, fd, output_name).replace("\\", "/")
+                # print("path: ", p, " output name: ", output_name)
+                if os.path.isfile(p):
                     # print("path before: ", output_name)
-                    outs[modality] = p.replace("\\", "/")
+                    outs[modality] = p
                     # print("path after: ", outs[modality])
+                # elif os.path.isfile(output_name):
+                #     outs[modality] = output_name
+                #     print("path after: ", outs[modality])
+
         # print("sensor_outputs[data_source]: ", sensor_outputs[data_source])
 
 
@@ -124,7 +139,7 @@ def _make_one_entry(parameters, entry_value, measurement_object_json):
     property_name = None
     meas_property_name = get_regex(measurement_object_json, meas_prop_pattern, filter_out_nones=True)  # measurement_object_json["property_name"]
     param_prop_name = get_regex(parameters, meas_prop_pattern)
-    print("param_prop_name", param_prop_name)
+    # print("param_prop_name", param_prop_name)
     if meas_property_name is not None:
         property_name = meas_property_name
     if param_prop_name is not None:
@@ -150,9 +165,9 @@ def experiment_to_json(experiment_directory, out_file=None):
     if out_file is None:
 
         out_file = "upload_dict_"+"_".join( os.path.basename(experiment_directory.replace("\\", "/")).replace("experiment_", "").split("_"))
-        print("out_file:", out_file)
+        # print("out_file:", out_file)
         out_file = os.path.abspath(os.path.join(config.upload_dicts_directory, out_file))
-        print("out_file:", out_file)
+        # print("out_file:", out_file)
         # exit(1)
     prop_dirs = os.listdir(experiment_directory)
     valid_dirs = list()
@@ -169,9 +184,9 @@ def experiment_to_json(experiment_directory, out_file=None):
         valid_prop_dirs.append(abs_prop_dir)
 
     object_context_dict = None
-    print("valid_prop_dirs", valid_prop_dirs)
+    # print("valid_prop_dirs", valid_prop_dirs)
     for prop_dir, local_prop_name in zip(valid_prop_dirs, valid_dirs):
-        print("local prop dir: ", local_prop_name)
+        # print("local prop dir: ", local_prop_name)
         data_dir = join(prop_dir, "data")
         certain_files = {"object_context": "object_context.json", "measurement": "measurement.json"}
         object_context_file = join(data_dir, certain_files["object_context"])
@@ -185,7 +200,7 @@ def experiment_to_json(experiment_directory, out_file=None):
             measurement_object_dict = json.load(fp)
         # print("measurement_object_dict", measurement_object_dict)
         data_dir_ls = os.listdir(data_dir)
-        data_jsons = [_ for _ in data_dir_ls if (_ not in certain_files.values() and ".json" in _)]
+        data_jsons = [_ for _ in data_dir_ls if (_ not in certain_files.values() and ".json" in _ and "setup.json" not in _)]
 
         sensor_outputs = dict()
 
@@ -193,22 +208,23 @@ def experiment_to_json(experiment_directory, out_file=None):
 
         # print("experiment_directory: ", experiment_directory, "data_dir", prop_dir)
         if meas_values is not None:  # if `meas_object.values` is filled
-            _data_dicts_to_sensor_outputs(sensor_outputs, meas_values, setup_dict, prop_dir)
+            _data_dicts_to_sensor_outputs(sensor_outputs, meas_values, setup_dict, prop_dir, dynamic_setup=False)
         for data_json in data_jsons:  # if `data_variables` is filled
             # print("data json: ", join(data_dir, data_json))
             with open(join(data_dir, data_json), "r") as fp:
                 data_dict = json.load(fp)
-                _data_dicts_to_sensor_outputs(sensor_outputs, data_dict, setup_dict, prop_dir)
-        print("setup_json:", setup_dict)
-        print("object_context:", object_context_dict)
-        print("sensor_outputs:", sensor_outputs)
+                print("join(data_dir, data_json): ", join(data_dir, data_json))
+                _data_dicts_to_sensor_outputs(sensor_outputs, data_dict, setup_dict, prop_dir, dynamic_setup=False)
+        # print("setup_json:", setup_dict)
+        # print("object_context:", object_context_dict)
+        # print("sensor_outputs:", sensor_outputs)
         # print("_measurement_object:", measurement_object_dict)
         entry_dict = dict()
         entry_dict["values"] = list()
         entry_values = entry_dict["values"]
         measurement_type = get_regex(measurement_object_dict, meas_type_pattern)  # measurement_object_dict["measurement_type"]  # ["continuous", "categorical"]
         parameters = get_regex(measurement_object_dict, param_pattern)  # measurement_object_dict["parameters"]  # {"cat1": 0.1, "cat2": 0.5, "cat3": 0.4}
-        print("parameters: ", parameters)
+        # print("parameters: ", parameters)
         entry_dict["type"] = get_regex(measurement_object_dict, meas_type_pattern)
         entry_dict["name"] = get_regex(measurement_object_dict, meas_prop_pattern)
         entry_dict["repository"] = get_regex(measurement_object_dict, repo_pattern)
@@ -235,18 +251,20 @@ def experiment_to_json(experiment_directory, out_file=None):
                     _make_one_entry(parameters, entry_value, measurement_object_dict)
         elif measurement_type == "categorical":
             entry_out = parameters
-            print("entry_out:", entry_out)
+            if entry_out is None:
+                entry_out = get_regex(measurement_object_dict, pred_pattern)
+            # print("entry_out:", entry_out)
             try:
                 # sometimes params can be a dict like so: {..., "params": {"precision": 0.7}, ...}
                 cat_sum = sum(entry_out.values())
             except:
                 cat_sum = -1
                 pass
-            print("category sum: ", cat_sum)
+            # print("category sum: ", cat_sum)
             if abs(cat_sum - 1.0) > 0.01:
                 entry_out = get_recursive_regex(entry_out, pred_pattern)
 
-                print("meas_values", meas_values)
+                # print("meas_values", meas_values)
                 try:
                     cat_sum = sum(meas_values.values())
                 except:
@@ -274,26 +292,25 @@ def experiment_to_json(experiment_directory, out_file=None):
             assert len({"rotation", "position", "translation", "grasped"} & set(grasp.keys())) == 3, \
                 "`grasp` dictionary must contain keys `position/translation`: xyz, `rotation`: xyz, `grasped`: bool"
             grasp["translation"] = grasp.pop("position")
-        print("grasp", grasp)
+        # print("grasp", grasp)
 
         gripper_pose = measurement_object_dict.get("gripper_pose")
         if gripper_pose is not None:
             assert len({"rotation", "position", "translation", "grasped"} & set(gripper_pose.keys())) == 3, \
                 "`gripper_pose` dictionary must contain keys `position/translation`: xyz, `rotation`: xyz, `grasped`: bool"
             gripper_pose["translation"] = gripper_pose.pop("position")
-        print("gripper_pose", gripper_pose)
+        # print("gripper_pose", gripper_pose)
 
         object_pose = measurement_object_dict.get("object_pose")
         if object_pose is not None:
             assert len({"rotation", "position", "translation"} & set(object_pose.keys())) == 2, \
                 "`object_pose` dictionary must contain keys `position/translation`: xyz, `rotation`: xyz"
             object_pose["translation"] = object_pose.pop("position")
-        print("object_pose", object_pose)
+        # print("object_pose", object_pose)
 
-        print("data_dir:", prop_dir)
+        # print("data_dir:", prop_dir)
         potential_img_dir = join(data_dir, "img.png")
-
-        print("entry_object", entry_dict)
+        # print("entry_object", entry_dict)
 
         request_dict = dict()
         request_dict["measurement"] = dict()
@@ -301,7 +318,7 @@ def experiment_to_json(experiment_directory, out_file=None):
         measurement_dict["object_instance"] = object_context_dict
 
         if os.path.exists(potential_img_dir):
-            print("img.png:", potential_img_dir)
+            # print("img.png:", potential_img_dir)
             measurement_dict["png"] = potential_img_dir
         # else:
         #     print("IMAGE PNG DOESNT EXIST")
@@ -313,9 +330,9 @@ def experiment_to_json(experiment_directory, out_file=None):
         request_dict["entry"] = entry_dict
         # print("\nrequest_dict: ", request_dict, "\n")
         upload_dict_path = out_file + "_" + local_prop_name + ".json"
-        print("out_file:", out_file)
-        print("local_prop_name:", local_prop_name)
-        print("upload_dict_path:", upload_dict_path)
+        # print("out_file:", out_file)
+        # print("local_prop_name:", local_prop_name)
+        # print("upload_dict_path:", upload_dict_path)
         with open(upload_dict_path, "w") as fp:
             json.dump(fp=fp, obj=request_dict, indent=True)
         # return request_dict

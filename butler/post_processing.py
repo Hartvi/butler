@@ -61,12 +61,36 @@ if __name__ == '__main__':
     # white_kinova_dir = "/unused/experiments/experiments/experiment_white_kinova_cube_light"
     # white_kinova_context = {"common_name": "white_kinova_cube_light"}
 
-    new_banana_context = {"common_name": "banana"}
-    new_banana_dir = "C:/Users/jhart/PycharmProjects/butler/butler/experiments/experiment_2022_04_29_17_06_08"
+    # new_banana_context = {"common_name": "banana"}
+    # new_banana_dir = "C:/Users/jhart/PycharmProjects/butler/butler/experiments/experiment_2022_04_29_17_06_08"
+    #
+    # change_experiment_jsons(new_banana_context,
+    #                         new_banana_dir,
+    #                         "object_context.json",
+    #                         lambda x: "data" in x,
+    #                         replace=True)
+    new_meas_type = {"meas_type": "grasp_proposal"}
+    new_setup = {"algorithm": "https://gitlab.fel.cvut.cz/body-schema/ipalm/ipalm-shape-completion",
+                 "camera": "intel_d435", "arm": "kinova_gen3_7dof", "gripper": "robotiq_2f85"}
+    # new_params = {"params": }
+    abs_ls_dataset = utils.abs_ls("C:/Users/jhart/PycharmProjects/butler/butler/dataset/database_exps")
 
-    change_experiment_jsons(new_banana_context,
-                            new_banana_dir,
-                            "object_context.json",
-                            lambda x: "data" in x,
-                            replace=True)
+    for abs_d in abs_ls_dataset:
+        change_experiment_jsons(new_meas_type,
+                                abs_d,
+                                "measurement.json",
+                                lambda x: "grasp" in x,
+                                replace=False)
+
+        change_experiment_jsons(new_setup,
+                                abs_d,
+                                "setup.json",
+                                lambda x: "experiment" in x and ("grasp" not in x) and ("volume" not in x),
+                                replace=True)
+
+        change_experiment_jsons(new_setup,
+                                abs_d,
+                                "setup.json",
+                                lambda x: "experiment" in x and ("grasp" not in x) and ("volume" not in x),
+                                replace=True)
 

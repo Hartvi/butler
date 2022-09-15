@@ -16,6 +16,10 @@ max_date = '9999_12_31_23_59_59'
 min_date = '0000_01_01_00_00_00'
 
 
+def abs_ls(parent_dir):
+    return map(lambda x: os.path.join(parent_dir, x), os.listdir(parent_dir))
+
+
 def compare_interval(rm_str, start, end):
     """"""
     def f(str_date):
@@ -76,6 +80,7 @@ def get_regex(d, pattern, filter_out_nones=True):
         Whether to filter out all keys that correspond to `None` values
 
     """
+    # print("dict:", d, "pattern:", pattern)
     dk = d.keys()
     # a list of keys that match the regex
     key_arr = filter(lambda x: len(re.findall(pattern=pattern, string=x)) != 0, dk)
@@ -90,7 +95,7 @@ def get_regex(d, pattern, filter_out_nones=True):
 
 
 def get_recursive_regex(obj, pattern):
-    # print("obj: ", obj)
+    # print("recursive regex in:", obj, " looking for:", pattern)
     it = get_regex(obj, pattern)
     if it is not None:
         # print("returning:", it)
